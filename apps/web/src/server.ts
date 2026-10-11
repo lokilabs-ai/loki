@@ -80,6 +80,14 @@ const staticImageAssets: Record<string, { file: string; type: string }> = {
     file: "./assets/marketing/loki-world-network.mp4",
     type: "video/mp4",
   },
+  "/assets/loki-earn-flow.mp4": {
+    file: "./assets/marketing/loki-earn-flow.mp4",
+    type: "video/mp4",
+  },
+  "/assets/loki-earn-flow.jpg": {
+    file: "./assets/marketing/loki-earn-flow.jpg",
+    type: "image/jpeg",
+  },
   "/assets/loki-world-network.webp": {
     file: "./assets/marketing/loki-world-network.webp",
     type: "image/webp",

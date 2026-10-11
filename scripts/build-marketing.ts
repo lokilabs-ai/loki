@@ -79,6 +79,8 @@ await Promise.all([
     "phone-share.png",
     "loki-game-montage.mp4",
     "loki-game-montage.webp",
+    "loki-earn-flow.mp4",
+    "loki-earn-flow.jpg",
     "loki-world-network.mp4",
     "loki-world-network.webp",
     "loki-hosting-pool.jpg",

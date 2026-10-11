@@ -1618,6 +1618,16 @@ export const marketingStyles = `
   box-shadow: none;
 }
 
+.earn-flow {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 1.15rem;
+  background: #080806;
+  box-shadow: none;
+}
+
 .grok-section-intro {
   max-width: 36rem;
   margin: 0 auto clamp(2rem, 4vw, 3rem);

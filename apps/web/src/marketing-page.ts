@@ -291,19 +291,8 @@ const homeMain = `
               <h3 class="play-title">Start earning<br>from Day One.</h3>
               <p>Skip waiting for weeks to get published. Earn from every link opened with your game, today.</p>
             </div>
-            <div class="feature-stage scene-board" aria-label="Battleship listed live on play.lokiplay.cc, with opens and creator share">
-              <div class="live-listing">
-                <p class="live-listing-url">play.lokiplay.cc/battleship</p>
-                <div class="live-listing-game">
-                  <i>B</i>
-                  <span><strong>Battleship</strong><em>Public</em></span>
-                  <b>Live</b>
-                </div>
-                <div class="live-listing-metrics">
-                  <p><strong>24</strong><span>Opened today</span></p>
-                  <p><strong>On</strong><span>Creator share</span></p>
-                </div>
-              </div>
+            <div class="feature-stage scene-board" aria-label="A game link opened by players, with earnings flowing to the creator">
+              <video class="earn-flow" autoplay muted loop playsinline poster="/assets/loki-earn-flow.jpg" src="/assets/loki-earn-flow.mp4"></video>
             </div>
           </article>
         </div>

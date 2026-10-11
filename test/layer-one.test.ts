@@ -300,8 +300,7 @@ test("Theme 03 product surfaces render functional, safely configured shells", ()
   assert.match(marketing, /workflow-row/);
   assert.match(marketing, /feature-row feature-row-flip workflow-row/);
   assert.match(marketing, /hero-montage/);
-  assert.match(marketing, /live-listing/);
-  assert.match(marketing, /Creator share/);
+  assert.match(marketing, /earn-flow/);
   assert.match(marketing, /party-flow/);
   assert.match(marketing, /Install-to-party timeline/);
   assert.match(marketing, /From side project<br>to Global Game<br>in a single prompt\./);
