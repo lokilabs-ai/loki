@@ -313,6 +313,12 @@ test("Theme 03 product surfaces render functional, safely configured shells", ()
   assert.match(marketing, /ide-stage/);
   assert.match(marketing, /share-editor/);
   assert.match(marketing, /ide-typed">Integrate and ship this repository to Loki\./);
+  assert.match(marketing, /class="home-demo"[\s\S]*href="\/demo">Watch the demo</);
+  assert.match(marketing, /<nav class="marketing-nav"[\s\S]*href="\/demo"[^>]*>Demo<\/a>/);
+  const demoPage = renderMarketingPage(config, "/demo");
+  assert.match(demoPage, /<h1 class="display" id="page-title">Demo<\/h1>/);
+  assert.match(demoPage, /src="https:\/\/media\.lokiplay\.cc\/loki-demo\.mp4"/);
+  assert.match(demoPage, /<title>Demo — Loki<\/title>/);
   assert.doesNotMatch(marketing, /beforeinstallprompt|loki_pwa_dismissed/);
   assert.doesNotMatch(creator, /beforeinstallprompt|loki_pwa_dismissed/);
   assert.doesNotMatch(
@@ -479,10 +485,9 @@ test("Theme 03 product surfaces render functional, safely configured shells", ()
     renderDocsPage(config, "/sdk"),
     /Clients --> JavaScript SDK/,
   );
-  assert.match(renderDocsPage(config, "/changelog"), /Reference --> Changelog/);
-  assert.match(renderDocsPage(config, "/changelog"), new RegExp(`<h2>${releaseVersion.replaceAll(".", "\\.")}</h2>`));
-  assert.match(renderDocsPage(config, "/changelog"), /<h2>0\.4\.1<\/h2>/);
-  assert.match(docsHome, /href="\/changelog"/);
+  assert.equal(isDocsRoute("/changelog"), false);
+  assert.doesNotMatch(docsHome, /href="\/changelog"/);
+  assert.doesNotMatch(llmsTxt, /docs\.lokiplay\.cc\/changelog/);
   assert.doesNotMatch(
     renderDocsPage(config, "/multiplayer"),
     /Choose by state, not genre/,
@@ -490,6 +495,7 @@ test("Theme 03 product surfaces render functional, safely configured shells", ()
   const safety = renderDocsPage(config, "/safety");
   assert.match(safety, /Install is not the finish/);
   assert.match(safety, /Each game still requires fine-tuning after Loki is installed/);
+  assert.match(safety, /You may need to test back and forth before the features work properly for this game/);
   assert.match(llmsTxt, /Each title still requires fine-tuning after installation/);
   for (const route of docsRoutes.filter((route) => route !== "/safety")) {
     assert.doesNotMatch(renderDocsPage(config, route), /docs-safety/);

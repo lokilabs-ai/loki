@@ -149,7 +149,7 @@ const pages: Record<
               ],
             ],
           )}
-          <p>Pin the exact published version for types and local development. Current release: <strong>${v}</strong>. In production Loki serves the SDK from the game host, so leave <code>@lokiplay/sdk</code> external in the production build. What changed in each release is on the <a href="/changelog">changelog</a>.</p>
+          <p>Pin the exact published version for types and local development. Current release: <strong>${v}</strong>. In production Loki serves the SDK from the game host, so leave <code>@lokiplay/sdk</code> external in the production build.</p>
           ${codeBlock(`npm install @lokiplay/sdk@${v}`)}
           <h2>Surfaces</h2>
           ${table(
@@ -848,53 +848,6 @@ npx lokiplay@${v} ship`)}
           <p>Treat <code>PROJECT_SUSPENDED</code> as stop-the-line.</p>
 `,
   },
-  "/changelog": {
-    title: "Changelog — Loki docs",
-    description: "What each Loki release changed for creators and players.",
-    lede: "Newest first. These notes say what a creator or a player gets. They are not a list of internal files.",
-    aside: aside([
-      {
-        label: "Current",
-        body: `${v}. After one ship, browser networking updates arrive on refresh.`,
-      },
-      {
-        label: "Older games",
-        body: "A game that still copied the SDK into its build keeps that copy until it ships again.",
-      },
-    ]),
-    main: `
-          <h2>0.5.4</h2>
-          <p>On the sign-in card, email and password each sit on their own line. Create account and Resend confirmation are centered under the button.</p>
-          <p>Published package links now use the lokilabs-ai GitHub account.</p>
-          <h2>0.5.3</h2>
-          <p>The creator desk now shows a note for a game that already has Loki: ship it again with <code>npx lokiplay ship --project &lt;id&gt;</code> instead of creating a new project or pasting the prompt again.</p>
-          <p>The rules now tell a coding agent to make a fresh room for each match, and to stop and ask you to press Reactivate when a game has been deactivated.</p>
-          <h2>0.5.2</h2>
-          <p>The prompt copied from the creator desk is now short. It installs the pinned packages, writes the current Loki rules into your repository with <code>npx lokiplay init</code>, and tells your coding agent to follow <code>AGENTS.md</code>. The rules live in one place, so the prompt and the rules can no longer disagree.</p>
-          <p>The rules now describe one flow: preview the finished build, then ship it.</p>
-          <h2>0.5.1</h2>
-          <p>A game link is public by default on every plan, and you can switch it between public and private from the dashboard. Deactivate a game to free its active slot without deleting it, then reactivate it later. The Free plan stores two games with one active at a time.</p>
-          <p>Loki keeps the latest three releases of each game and caps stored builds per plan. The command-line tool checks the size of your build before it uploads.</p>
-          <h2>0.5.0</h2>
-          <p>Loki now serves the browser networking from the game's own address. A new game installs the package once, ships once, and later networking fixes arrive the next time a player opens the game. The creator does not install a new package or ship again for those fixes.</p>
-          <p>An existing game keeps the copy it already shipped. It switches only after one rebuild that leaves the package out of the finished build, then one ship.</p>
-          <p>The package number still matters for trying the game on your own computer, for the command-line tool, and for Swift, Kotlin, and Unity. It also matters again if Loki changes a call on purpose.</p>
-          <h2>0.4.7</h2>
-          <p>A tap such as punch, kick, jump, or Ready can travel on the direct link between players and still go through Singapore. The host uses the first copy and ignores the repeat. Leaderboard replies that include extra server fields are accepted, so a valid board no longer shows as unavailable.</p>
-          <h2>0.4.6</h2>
-          <p>Pictures sent on the direct link now count, including the player they came from. The guest waits for the gap between pictures before drawing. A faster link no longer adds a second wait based on the trip to Singapore.</p>
-          <h2>0.4.5</h2>
-          <p>The host can send pictures more often. The usual rate stays 30 per second, and the ceiling is 100. The rate starts lower and climbs when the connection stays clean.</p>
-          <h2>0.4.4</h2>
-          <p>Matches run by Loki's server no longer stall because the viewer's clock and the server's clock disagreed. Held controls are no longer sent faster than the match can use them.</p>
-          <h2>0.4.3</h2>
-          <p>Server authority is available for games that opt in. A continuous match can run on Loki's server instead of on a player's computer. The free plan still cannot use it.</p>
-          <h2>0.4.2</h2>
-          <p>The game agent asks whether the match should run on a player's computer or on Loki's server, and the creator can switch later. Plans are on the account: Free, Loki, and Loki Pro.</p>
-          <h2>0.4.1</h2>
-          <p>The last open seat in a public room is held so two people cannot take it at the same time.</p>
-`,
-  },
   "/safety": {
     title: "Safety note — Loki docs",
     description:
@@ -914,13 +867,7 @@ npx lokiplay@${v} ship`)}
           <h2>What install gives you</h2>
           <p>The SDK, CLI, and overlay give you a host, rooms, and a playable URL. They do not invent the right player count, room type, lobby, reducer, realtime profile, or mobile layout for that title.</p>
           <h2>What you still do</h2>
-          <ul>
-            <li>Inspect the real modes. Do not infer seats or simulation type from the genre.</li>
-            <li>Add a usable create/join flow. The overlay does not start a match.</li>
-            <li>Tune the reducer or <code>RealtimeProfile</code> against this game, then ship again. The play link keeps the previous release until that ship activates.</li>
-            <li>Playtest reconnect, host migration, and phones before you claim they work.</li>
-          </ul>
-          <p>If a material field is ambiguous, stop and ask. See <a href="/agents">Agent rules</a> and <a href="/quickstart">Quickstart</a>.</p>
+          <p>Fine-tuning is required after installation. Play the game, adjust the integration, and ship again. You may need to test back and forth before the features work properly for this game.</p>
 `,
   },
 };
@@ -963,7 +910,7 @@ export const llmsTxt = `# Loki
 Loki hosts a scanned, sandboxed browser build and runs rooms on the same playable URL. Creators do not upload a backend.
 
 ## Safety
-Installing Loki is not a finished game. Each title still requires fine-tuning after installation: inspect real modes, confirm room type and player counts, add a usable create/join flow, tune the reducer or RealtimeProfile, and playtest reconnect and mobile. Agents must not treat npm install or lokiplay ship as a complete integration.
+Installing Loki is not a finished game. Each title still requires fine-tuning after installation. Play the game, adjust the integration, and ship again. You may need to test back and forth before the features work properly for that game.
 
 ## Packages
 - @lokiplay/sdk@${v} — JavaScript client
@@ -976,7 +923,6 @@ Installing Loki is not a finished game. Each title still requires fine-tuning af
 - Quickstart: https://docs.lokiplay.cc/quickstart
 - Agents: https://docs.lokiplay.cc/agents
 - Safety: https://docs.lokiplay.cc/safety
-- Changelog: https://docs.lokiplay.cc/changelog
 - MCP: https://docs.lokiplay.cc/mcp
 - App: https://app.lokiplay.cc/
 - Play: https://play.lokiplay.cc/

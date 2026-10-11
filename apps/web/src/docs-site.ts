@@ -27,7 +27,6 @@ export const docsRoutes = [
   "/mcp",
   "/errors",
   "/limits",
-  "/changelog",
   "/safety",
 ] as const;
 
@@ -98,7 +97,6 @@ const navGroups: Array<{ label: string; items: Array<{ href: DocsRoute; label: s
       items: [
         { href: "/errors", label: "Errors" },
         { href: "/limits", label: "Limits" },
-        { href: "/changelog", label: "Changelog" },
         { href: "/safety", label: "Safety note" },
       ],
     },
@@ -115,7 +113,7 @@ export function docsEyebrow(path: DocsRoute): string {
 export const docsSafetyCopy = {
   eyebrow: "Safety note",
   title: "Install is not the finish.",
-  body: "Each game still requires fine-tuning after Loki is installed. The SDK, CLI, and overlay give you a host, rooms, and a playable URL. They do not invent the right player count, room type, lobby, reducer, realtime profile, or mobile layout for that title. Inspect the real modes, confirm the integration, playtest reconnect and phones, then ship again. The play link keeps the last activated release until that ship. Agents must not treat npm install or lokiplay ship as a complete game.",
+  body: "Fine-tuning is required after installation. Play the game, adjust the integration, and ship again. You may need to test back and forth before the features work properly for this game.",
 };
 
 export const docsStyles = `
@@ -612,7 +610,6 @@ function footer(): string {
         <a href="/sdk">JavaScript SDK</a>
         <a href="/cli">CLI</a>
         <a href="/mcp">MCP</a>
-        <a href="/changelog">Changelog</a>
         <a href="/safety">Safety note</a>
         <a href="/llms.txt">llms.txt</a>
       </div></div>

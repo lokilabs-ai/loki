@@ -42,6 +42,7 @@ export const marketingRoutes = [
   "/agents",
   "/sdk",
   "/examples",
+  "/demo",
   "/pricing",
   "/about",
   "/contact",
@@ -4668,6 +4669,39 @@ export const marketingStyles = `
   padding: clamp(3rem, 7vw, 6rem) 0 clamp(2rem, 5vw, 4rem);
 }
 
+.home-demo {
+  width: min(100% - var(--page-inset), var(--page-max));
+  margin: 0 auto;
+  padding: clamp(3rem, 7vw, 6rem) 0 clamp(1.5rem, 4vw, 3rem);
+  text-align: center;
+}
+
+.home-demo h2 {
+  margin: 0 0 1.5rem;
+  color: var(--paper);
+  font-size: clamp(2.4rem, 5vw, 4.4rem);
+  font-weight: 560;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.home-demo .page-actions {
+  justify-content: center;
+}
+
+.demo-stage {
+  width: min(100% - var(--page-inset), var(--page-max));
+  margin: 0 auto;
+  padding: 0 0 clamp(3rem, 7vw, 6rem);
+}
+
+.demo-player {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #000;
+}
+
 .home-faq-inner {
   display: grid;
   grid-template-columns: minmax(10rem, 0.7fr) minmax(0, 1.5fr);
@@ -5420,6 +5454,7 @@ function header(path: string): string {
             .join("")}
         </div>
       </div>
+      <a href="/demo"${currentAttr(path, "/demo")}>Demo</a>
       <a href="/pricing"${currentAttr(path, "/pricing")}>Pricing</a>
       <a href="https://docs.lokiplay.cc/">Docs ↗</a>
     </nav>
@@ -5440,6 +5475,7 @@ function header(path: string): string {
             </div>
           </details>
         </div>
+        <a href="/demo"${currentAttr(path, "/demo")}>Demo</a>
         <a href="/pricing"${currentAttr(path, "/pricing")}>Pricing</a>
         <a href="https://docs.lokiplay.cc/">Docs ↗</a>
       </div>

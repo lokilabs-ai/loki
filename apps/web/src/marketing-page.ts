@@ -364,6 +364,13 @@ ${agentMarquee()}
       </div>
     </section>
 
+    <section class="home-demo" aria-labelledby="home-demo-title">
+      <h2 id="home-demo-title">See Loki in action.</h2>
+      <div class="page-actions">
+        <a class="button button-primary" href="/demo">Watch the demo</a>
+      </div>
+    </section>
+
     <section class="pricing-plans pricing-home" aria-labelledby="home-pricing">
       <h2 class="pricing-home-title" id="home-pricing">Pricing</h2>
 ${pricingPlans()}
@@ -600,6 +607,20 @@ const examplesMain = `
 ${closingBand()}
 `;
 
+const demoMain = `
+    <section class="page-hero" aria-labelledby="page-title">
+      <div class="page-hero-inner">
+        <div>
+          <p class="eyebrow">Demo</p>
+          <h1 class="display" id="page-title">Demo</h1>
+        </div>
+      </div>
+    </section>
+    <section class="demo-stage" aria-label="Loki demo video">
+      <video class="demo-player" controls playsinline preload="metadata" src="https://media.lokiplay.cc/loki-demo.mp4"></video>
+    </section>
+`;
+
 const pricingMain = `
     <section class="page-hero" aria-labelledby="page-title">
       <div class="page-hero-inner">
@@ -726,6 +747,11 @@ const pages: Record<
     title: "Examples — Loki",
     description: "Small multiplayer games hosted and played on Loki.",
     main: examplesMain,
+  },
+  "/demo": {
+    title: "Demo — Loki",
+    description: "Watch a demo of Loki.",
+    main: demoMain,
   },
   "/pricing": {
     title: "Pricing — Loki",

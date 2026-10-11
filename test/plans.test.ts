@@ -277,6 +277,9 @@ test("creator dashboard shows the account plan and billing actions", () => {
   assert.match(page, /id="account-plan"/);
   assert.match(page, /id="plan-card"/);
   assert.match(page, /\$15\/month, billed annually/);
+  assert.match(page, /button\.textContent = "Upgrade";/);
+  assert.match(page, /Loki is in the beta phase\. Only the free plan is available\./);
+  assert.doesNotMatch(page, /"Upgrade " \+ price/);
   assert.match(page, /Manage subscription/);
   assert.match(page, /id="nav-billing"/);
   assert.match(page, /usage-fill/);

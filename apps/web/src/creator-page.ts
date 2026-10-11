@@ -2097,14 +2097,21 @@ const creatorScript = String.raw`
         blurb.textContent = entry.blurb;
         card.append(title, blurb);
         if (!subscribed && entry.id !== plan) {
-          for (const price of entry.prices) {
-            const button = document.createElement("button");
-            button.className = "button";
-            button.type = "button";
-            button.textContent = "Upgrade " + price[1];
-            button.addEventListener("click", () => startCheckout(price[0], button));
-            card.appendChild(button);
-          }
+          // Beta: paid plans are not open yet. Checkout (startCheckout and
+          // entry.prices) stays in place for when billing opens.
+          const button = document.createElement("button");
+          button.className = "button";
+          button.type = "button";
+          button.textContent = "Upgrade";
+          const betaNote = document.createElement("p");
+          betaNote.className = "usage-note";
+          betaNote.setAttribute("role", "status");
+          betaNote.hidden = true;
+          betaNote.textContent = "Loki is in the beta phase. Only the free plan is available.";
+          button.addEventListener("click", () => {
+            betaNote.hidden = false;
+          });
+          card.append(button, betaNote);
         }
         options.appendChild(card);
       }
