@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "cc.lokiplay"
-version = "0.5.3"
+version = "0.5.4"
 
 repositories { mavenCentral() }
 
@@ -50,14 +50,14 @@ publishing {
             pom {
                 name.set("Loki SDK for Kotlin")
                 description.set("Headless protocol-v1 Loki client")
-                url.set("https://github.com/sanbornli/loki")
+                url.set("https://github.com/lokilabs-ai/loki")
                 licenses {
                     license {
                         name.set("MIT License")
                         url.set("https://opensource.org/licenses/MIT")
                     }
                 }
-                scm { url.set("https://github.com/sanbornli/loki") }
+                scm { url.set("https://github.com/lokilabs-ai/loki") }
                 developers {
                     developer {
                         id.set("lokiplay")

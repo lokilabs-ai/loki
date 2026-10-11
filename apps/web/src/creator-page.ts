@@ -225,22 +225,25 @@ body.creator-dashboard .page-shell {
 }
 
 .auth-panel .form-grid {
-  grid-template-columns: 1fr 1fr;
-  gap: 0.8rem 0.75rem;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
 }
 
 .auth-panel .field {
   gap: 0.3rem;
+  text-align: left;
 }
 
 .auth-panel .field label {
   font-size: 0.6rem;
+  text-align: left;
 }
 
 .auth-panel .field input {
   min-height: 2.35rem;
   padding: 0.4rem 0.6rem;
   font-size: 0.78rem;
+  text-align: left;
 }
 
 .auth-panel .button {
@@ -254,8 +257,10 @@ body.creator-dashboard .page-shell {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 0.55rem 1rem;
   margin-top: 0.15rem;
+  text-align: center;
 }
 
 .auth-panel .form-actions .button {
@@ -264,7 +269,9 @@ body.creator-dashboard .page-shell {
 }
 
 .auth-panel .text-button {
+  flex: 1 1 100%;
   font-size: 0.62rem;
+  text-align: center;
 }
 
 .auth-divider {
@@ -2550,12 +2557,12 @@ const creatorScript = String.raw`
           productConfig.lokiplayVersion ||
           productConfig.packageVersion
         ),
-        "0.5.3"
+        "0.5.4"
       );
     }
 
     function configuredCliVersion() {
-      return text(productConfig && productConfig.cliVersion, "0.5.3");
+      return text(productConfig && productConfig.cliVersion, "0.5.4");
     }
 
     function agentPrompt(project) {

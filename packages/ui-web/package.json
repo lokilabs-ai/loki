@@ -1,15 +1,15 @@
 {
   "name": "@lokiplay/ui-web",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Web component overlay for Loki multiplayer rooms.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sanbornli/loki.git",
+    "url": "git+https://github.com/lokilabs-ai/loki.git",
     "directory": "packages/ui-web"
   },
-  "homepage": "https://github.com/sanbornli/loki#readme",
-  "bugs": "https://github.com/sanbornli/loki/issues",
+  "homepage": "https://github.com/lokilabs-ai/loki#readme",
+  "bugs": "https://github.com/lokilabs-ai/loki/issues",
   "type": "module",
   "files": [
     "dist",
@@ -33,6 +33,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@lokiplay/sdk": "0.5.3"
+    "@lokiplay/sdk": "0.5.4"
   }
 }

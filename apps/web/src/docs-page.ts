@@ -863,6 +863,9 @@ npx lokiplay@${v} ship`)}
       },
     ]),
     main: `
+          <h2>0.5.4</h2>
+          <p>On the sign-in card, email and password each sit on their own line. Create account and Resend confirmation are centered under the button.</p>
+          <p>Published package links now use the lokilabs-ai GitHub account.</p>
           <h2>0.5.3</h2>
           <p>The creator desk now shows a note for a game that already has Loki: ship it again with <code>npx lokiplay ship --project &lt;id&gt;</code> instead of creating a new project or pasting the prompt again.</p>
           <p>The rules now tell a coding agent to make a fresh room for each match, and to stop and ask you to press Reactivate when a game has been deactivated.</p>

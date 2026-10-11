@@ -15,7 +15,7 @@ const ecosystems = requested
 if (requested && !["kotlin", "swift", "unity"].includes(requested)) {
   throw new Error(`unsupported ecosystem ${requested}`);
 }
-const version = process.env.LOKI_PACKAGE_VERSION ?? "0.5.3";
+const version = process.env.LOKI_PACKAGE_VERSION ?? "0.5.4";
 const tag = `v${version}`;
 
 async function run(
@@ -56,7 +56,7 @@ if (ecosystems.has("kotlin")) {
 
 if (ecosystems.has("unity")) {
   const unityPackageUrl =
-    `https://raw.githubusercontent.com/sanbornli/loki/${tag}/clients/unity/package.json`;
+    `https://raw.githubusercontent.com/lokilabs-ai/loki/${tag}/clients/unity/package.json`;
   const unity = await fetch(unityPackageUrl);
   if (!unity.ok) {
     throw new Error(`Unity package.json on ${tag} returned ${unity.status}`);
@@ -72,7 +72,7 @@ if (ecosystems.has("unity")) {
   ];
   for (const path of unityRuntimeFiles) {
     const response = await fetch(
-      `https://raw.githubusercontent.com/sanbornli/loki/${tag}/${path}`,
+      `https://raw.githubusercontent.com/lokilabs-ai/loki/${tag}/${path}`,
     );
     if (!response.ok) {
       throw new Error(`Unity package file ${path} on ${tag} returned ${response.status}`);
@@ -82,7 +82,7 @@ if (ecosystems.has("unity")) {
 
 if (ecosystems.has("swift")) {
   packageSwift = await fetch(
-    `https://raw.githubusercontent.com/sanbornli/loki/${tag}/Package.swift`,
+    `https://raw.githubusercontent.com/lokilabs-ai/loki/${tag}/Package.swift`,
   );
   if (!packageSwift.ok) {
     throw new Error(`Package.swift on ${tag} returned ${packageSwift.status}`);
@@ -128,7 +128,7 @@ let package = Package(
     name: "LokiNativeVerify",
     platforms: [.macOS(.v12)],
     dependencies: [
-        .package(url: "https://github.com/sanbornli/loki.git", exact: "${version}")
+        .package(url: "https://github.com/lokilabs-ai/loki.git", exact: "${version}")
     ],
     targets: [
         .target(
@@ -183,7 +183,7 @@ const artifact = {
     ...(ecosystems.has("swift")
       ? {
           swift: {
-            source: `https://github.com/sanbornli/loki.git#${tag}`,
+            source: `https://github.com/lokilabs-ai/loki.git#${tag}`,
             product: "LokiSDK",
             packageSwift: packageSwift?.status,
             resolved: swiftResolved,
@@ -193,7 +193,7 @@ const artifact = {
     ...(ecosystems.has("unity")
       ? {
           unity: {
-            source: `https://github.com/sanbornli/loki.git?path=/clients/unity#${tag}`,
+            source: `https://github.com/lokilabs-ai/loki.git?path=/clients/unity#${tag}`,
             package: "play.loki.sdk",
             version: unityPackage?.version,
             resolved: unityResolved,

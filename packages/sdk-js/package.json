@@ -1,15 +1,15 @@
 {
   "name": "@lokiplay/sdk",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "JavaScript client SDK for Loki multiplayer games.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sanbornli/loki.git",
+    "url": "git+https://github.com/lokilabs-ai/loki.git",
     "directory": "packages/sdk-js"
   },
-  "homepage": "https://github.com/sanbornli/loki#readme",
-  "bugs": "https://github.com/sanbornli/loki/issues",
+  "homepage": "https://github.com/lokilabs-ai/loki#readme",
+  "bugs": "https://github.com/lokilabs-ai/loki/issues",
   "type": "module",
   "files": [
     "dist",
@@ -37,6 +37,6 @@
   },
   "dependencies": {
     "@heroiclabs/nakama-js": "^2.8.0",
-    "@lokiplay/protocol": "0.5.3"
+    "@lokiplay/protocol": "0.5.4"
   }
 }

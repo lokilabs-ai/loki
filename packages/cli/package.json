@@ -1,15 +1,15 @@
 {
   "name": "lokiplay",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "Command-line tools for Loki game projects and deployments. Loki hosts finished web JavaScript games. Support for Unity, Godot, iOS, and Android are coming soon.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sanbornli/loki.git",
+    "url": "git+https://github.com/lokilabs-ai/loki.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/sanbornli/loki#readme",
-  "bugs": "https://github.com/sanbornli/loki/issues",
+  "homepage": "https://github.com/lokilabs-ai/loki#readme",
+  "bugs": "https://github.com/lokilabs-ai/loki/issues",
   "type": "module",
   "files": [
     "dist",
@@ -39,7 +39,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@lokiplay/protocol": "0.5.3",
+    "@lokiplay/protocol": "0.5.4",
     "fflate": "^0.8.3"
   }
 }

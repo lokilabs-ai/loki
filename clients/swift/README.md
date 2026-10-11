@@ -7,7 +7,7 @@ messages, presence, chat, private leaderboards, reconnect, and host migration.
 
 ## Install
 
-Add `https://github.com/sanbornli/loki.git` through Swift Package Manager and
+Add `https://github.com/lokilabs-ai/loki.git` through Swift Package Manager and
 select version `0.5.0` exactly. The repository root exposes `LokiSDK`.
 
 Prefer `createSynchronizedRoom(initialState:reduce:)` for shared state. The

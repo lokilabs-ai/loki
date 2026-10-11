@@ -1206,7 +1206,7 @@ test("release workflow retries npm smoke and generates a Swift 5.9 manifest", as
   assert.match(swift, /swift-tools-version: 5\.9/);
   assert.match(
     swift,
-    /\.package\(url: "https:\/\/github\.com\/sanbornli\/loki\.git", exact: "\$\{version\}"\)\n/,
+    /\.package\(url: "https:\/\/github\.com\/lokilabs-ai\/loki\.git", exact: "\$\{version\}"\)\n/,
   );
   assert.match(
     swift,
@@ -1214,7 +1214,7 @@ test("release workflow retries npm smoke and generates a Swift 5.9 manifest", as
   );
   assert.doesNotMatch(
     swift,
-    /\.package\(url: "https:\/\/github\.com\/sanbornli\/loki\.git", exact: "\$\{version\}"\),/,
+    /\.package\(url: "https:\/\/github\.com\/lokilabs-ai\/loki\.git", exact: "\$\{version\}"\),/,
   );
   assert.doesNotMatch(
     swift,
