@@ -62,8 +62,9 @@ import { createEntityCompositor, createLocalPrediction } from "./realtime-entiti
 import { calibrateRealtimeRoom } from "./realtime-calibration.js";
 import { createLobby, type Lobby, type LobbyOptions, type LobbyRoom } from "./lobby.js";
 
-export { createLobby, LobbyError } from "./lobby.js";
+export { createLobby, describeConnection, LobbyError } from "./lobby.js";
 export type {
+  ConnectionStatus,
   Lobby,
   LobbyClient,
   LobbyListStatus,
@@ -105,6 +106,7 @@ export type {
 export {
   REALTIME_ROOM_BACK_TO_BACK_PUBLISH_FACTOR,
   REALTIME_ROOM_DEFAULT_IN_FLIGHT_SNAPSHOTS,
+  REALTIME_ROOM_DEFAULT_MIN_SNAPSHOT_HZ,
   REALTIME_ROOM_DEFAULT_SNAPSHOT_HZ,
   REALTIME_ROOM_HOST_STALL_FACTOR,
   REALTIME_ROOM_HOST_STALL_FLOOR_MS,

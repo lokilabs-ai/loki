@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createLobby,
+  describeConnection,
   LobbyError,
   type LobbyClient,
   type LobbyRoom,
@@ -611,4 +612,48 @@ test("dispose stops updates and unsubscribes from the room without leaving", asy
   assert.equal(seen.length, count);
   assert.equal(FakeRoom.all[0]!.leaves, 0);
   assert.equal(FakeRoom.all[0]!.listeners.size, 0);
+});
+
+test("the lobby tells the game when input is allowed and what to say otherwise", async () => {
+  reset();
+  const lobby = lobbyWith();
+  await lobby.createPrivate();
+  const room = FakeRoom.all[0]!;
+  room.setMembers(["me", "friend"]);
+  assert.equal(lobby.getState().room?.canAct, true);
+  assert.equal(lobby.getState().room?.connectionNotice, undefined);
+
+  for (const [connection, notice] of [
+    ["suspended", "Paused while the game is in the background."],
+    ["reconnecting", "Reconnecting…"],
+    ["resynchronizing", "Catching up with the match…"],
+  ] as const) {
+    room.connection = connection;
+    room.emit();
+    assert.equal(lobby.getState().phase, "ready", `${connection} keeps the match running`);
+    assert.equal(lobby.getState().room?.canAct, false, `${connection} locks input`);
+    assert.equal(lobby.getState().room?.connectionNotice, notice);
+  }
+
+  room.connection = "connected";
+  room.emit();
+  assert.equal(lobby.getState().room?.canAct, true);
+  assert.equal(lobby.getState().room?.connectionNotice, undefined);
+});
+
+test("describeConnection covers every connection state", () => {
+  assert.deepEqual(describeConnection("connected"), { canAct: true, terminal: false });
+  assert.deepEqual(describeConnection("idle"), { canAct: false, terminal: false });
+  for (const state of ["closed", "failed"] as const) {
+    const status = describeConnection(state);
+    assert.equal(status.canAct, false);
+    assert.equal(status.terminal, true);
+    assert.ok(status.notice);
+  }
+  for (const state of ["joining", "suspended", "reconnecting", "resynchronizing", "leaving", "leave_failed"] as const) {
+    const status = describeConnection(state);
+    assert.equal(status.canAct, false);
+    assert.equal(status.terminal, false);
+    assert.ok(status.notice, state);
+  }
 });

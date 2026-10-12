@@ -490,7 +490,7 @@ npx lokiplay@${v} <command>`)}
             <li><code>reduce(state, action, context)</code> must be synchronous, deterministic, and fast (budget 50 ms). No I/O or rendering inside <code>reduce</code>.</li>
             <li>Only the current host runs <code>reduce</code>.</li>
             <li>Subscribe to snapshots for <code>state</code>, <code>members</code>, host, and <code>connection</code>.</li>
-            <li>Call <code>dispatch(action)</code> only while <code>connection === "connected"</code>.</li>
+            <li>Call <code>dispatch(action)</code> only while <code>connection === "connected"</code>. With the lobby controller, gate controls on <code>room.canAct</code> and show <code>room.connectionNotice</code>.</li>
             <li>A control that commits a match action calls <code>dispatch()</code>. Draw the result from the snapshot that comes back. Aim, hover, and animation stay local. Show a rejection on the control.</li>
           </ol>
           ${codeBlock(`const room = client.createSynchronizedRoom<State, Action>({
@@ -547,7 +547,7 @@ await room.dispatch({ type: "move", from: "e2", to: "e4" });`)}
   snapshotHz: 30,
   adaptiveRate: true,
   initialSnapshotHz: 12,
-  minSnapshotHz: 8,
+  minSnapshotHz: 12,
   diagnostics: true,
   predict(state, localInput, dtSeconds) { return state; },
   interpolate(from, to, t) { return to; },
@@ -564,13 +564,13 @@ function frame(now: number) {
 }`)}
           <p>Drive rendering from one game-owned <code>requestAnimationFrame</code> loop. Call <code>advanceFrame()</code> and <code>getRenderState()</code> at most once per frame. <code>setInput()</code> is safe every frame; the SDK paces the network send.</p>
           <h2>Rates</h2>
-          <p><code>snapshotHz</code> is a ceiling (default 30, cap 100), not a delivery guarantee. Start conservative with <code>adaptiveRate: true</code>. Do not copy <code>snapshotHz</code> into <code>game.json</code> <code>tickRate</code>.</p>
+          <p><code>snapshotHz</code> is a ceiling (default 30, cap 100), not a delivery guarantee. Start with <code>adaptiveRate: true</code>; the floor and the starting rate are 12 Hz. Raise <code>snapshotHz</code> within the ceiling to find the best rate for the game, with diagnostic evidence. Do not copy <code>snapshotHz</code> into <code>game.json</code> <code>tickRate</code>.</p>
           <h2>Calibrate</h2>
           <p>Prefer <code>calibrateRealtimeRoom()</code> over guessing. It needs two distinct player identities — two isolated browser profiles or two real players, not two tabs of one signed-in account. Write only the returned <code>RealtimeProfile</code> into <code>createRealtimeRoom()</code>.</p>
           ${codeBlock(`import { calibrateRealtimeRoom } from "@lokiplay/sdk";
 
 const { recommended } = await calibrateRealtimeRoom({
-  snapshotHzCandidates: [8, 12, 15, 20, 25, 30],
+  snapshotHzCandidates: [12, 15, 20, 25, 30, 45, 60],
   simulationHz: 60,
   durationMsPerCandidate: 20_000,
   createHostRoom: (candidate) =>
@@ -587,7 +587,7 @@ const { recommended } = await calibrateRealtimeRoom({
 });
 
 const room = client.createRealtimeRoom({ ...recommended, predict, interpolate });`)}
-          <p>If calibration throws, fix the harness and rerun. If no candidate qualifies, use the floor profile (8 Hz, adaptive). Fine-tuning a racer after install means running this sweep on the real wiring, not copying another game’s Hertz.</p>
+          <p>If calibration throws, fix the harness and rerun. If no candidate qualifies, use the floor profile (12 Hz, adaptive). Fine-tuning a racer after install means running this sweep on the real wiring, not copying another game’s Hertz.</p>
           <h2>Render streams</h2>
           <p>Predict the local entity. Interpolate remotes. Use <code>getRenderStates()</code> / <code>composeRenderState</code>, or <code>createEntityCompositor</code> / <code>createLocalPrediction</code> with bulk <code>setEntities</code>. Use <code>sendEffect()</code> / <code>onConfirmedEffect()</code> for authoritative events such as collisions.</p>
 `,

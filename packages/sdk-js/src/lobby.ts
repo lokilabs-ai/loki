@@ -100,7 +100,48 @@ export type LobbyRoomView = {
   /** True once the local player is in the roster. */
   seated: boolean;
   connection: ConnectionState;
+  /** True only while `connection` is "connected". Lock match input whenever this is false. */
+  canAct: boolean;
+  /** Short plain-English text for a non-connected state. The game may show its own wording instead. */
+  connectionNotice?: string;
 };
+
+export type ConnectionStatus = {
+  canAct: boolean;
+  notice?: string;
+  /** True when the room cannot recover on its own: show a way back to the menu. */
+  terminal: boolean;
+};
+
+/**
+ * Turns a room's `connection` into what a game needs to draw: whether input is
+ * allowed and a short notice. It draws nothing. Suspended, reconnecting, and
+ * resynchronizing keep the last rendered state and wait for the SDK to recover.
+ */
+export function describeConnection(connection: ConnectionState): ConnectionStatus {
+  switch (connection) {
+    case "connected":
+      return { canAct: true, terminal: false };
+    case "suspended":
+      return { canAct: false, notice: "Paused while the game is in the background.", terminal: false };
+    case "reconnecting":
+      return { canAct: false, notice: "Reconnecting…", terminal: false };
+    case "resynchronizing":
+      return { canAct: false, notice: "Catching up with the match…", terminal: false };
+    case "joining":
+      return { canAct: false, notice: "Joining…", terminal: false };
+    case "leaving":
+      return { canAct: false, notice: "Leaving…", terminal: false };
+    case "leave_failed":
+      return { canAct: false, notice: "Could not leave the room. Try again.", terminal: false };
+    case "closed":
+      return { canAct: false, notice: "The room has closed.", terminal: true };
+    case "failed":
+      return { canAct: false, notice: "The connection was lost.", terminal: true };
+    case "idle":
+      return { canAct: false, terminal: false };
+  }
+}
 
 export type LobbyListStatus = "idle" | "loading" | "ready" | "error";
 
@@ -233,6 +274,7 @@ export function createLobby<Room extends LobbyRoom>(options: LobbyOptions<Room>)
 
   const viewOf = (snapshot: LobbyRoomSnapshot): LobbyRoomView => {
     const members = snapshot.members.map((member) => ({ ...member }));
+    const status = describeConnection(snapshot.connection);
     return {
       roomId: snapshot.roomId,
       inviteCode: snapshot.inviteCode,
@@ -243,6 +285,8 @@ export function createLobby<Room extends LobbyRoom>(options: LobbyOptions<Room>)
       minPlayers: requiredPlayers,
       seated: members.some((member) => member.playerId === snapshot.playerId),
       connection: snapshot.connection,
+      canAct: status.canAct,
+      ...(status.notice ? { connectionNotice: status.notice } : {}),
     };
   };
 

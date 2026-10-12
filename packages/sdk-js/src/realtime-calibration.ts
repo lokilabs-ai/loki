@@ -260,7 +260,7 @@ export function buildRecommendedRealtimeProfile(
  * Exercises each candidate snapshot rate against a real two-client
  * RealtimeRoom pair and recommends the highest rate that is actually
  * delivered without a Loki-owned cliff. If every completed candidate
- * fails the gates, returns the Loki floor profile (8 Hz, adaptive)
+ * fails the gates, returns the Loki floor profile (12 Hz, adaptive)
  * instead of throwing. Throws only when the harness is broken
  * (empty list, incomplete candidate, no diagnostics, no guest frames,
  * or a candidate run with adaptiveRate enabled).

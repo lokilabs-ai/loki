@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   LokiClient,
   RealtimeRoomError,
+  REALTIME_ROOM_DEFAULT_MIN_SNAPSHOT_HZ,
   REALTIME_ROOM_MAX_IN_FLIGHT_SNAPSHOTS,
   REALTIME_ROOM_MAX_ORDERED_INPUTS,
   REALTIME_ROOM_MAX_SNAPSHOT_HZ,
@@ -1081,6 +1082,24 @@ test("a RATE_LIMITED snapshot rejection releases the specific pending submission
   assert.equal(room.getSnapshot().state?.positions.self, undefined);
   await sleep(200);
   assert.equal(room.getSnapshot().state?.positions.self, 2);
+});
+
+test("the default adaptive floor is 12 Hz and a timeout cannot shed load below it", async () => {
+  assert.equal(REALTIME_ROOM_DEFAULT_MIN_SNAPSHOT_HZ, 12);
+  const bus = new RealtimeBus();
+  const { client } = await connectedClient(bus);
+  const room = client.createRealtimeRoom<RacerState, RacerInput>({
+    snapshotHz: 30,
+    adaptiveRate: true,
+    diagnostics: true,
+  });
+  await room.create();
+  assert.equal(room.getSnapshot().diagnostics?.currentTargetSnapshotHz, 12);
+
+  bus.dropNextSnapshot = true;
+  room.publishSnapshot({ positions: { self: 1 } }, { simulationTick: 1 });
+  await sleep(1100);
+  assert.equal(room.getSnapshot().diagnostics?.currentTargetSnapshotHz, 12, "a reduction stops at the floor");
 });
 
 test("adaptiveRate reduces the target snapshot rate on an ack timeout and never exceeds the configured ceiling", async () => {

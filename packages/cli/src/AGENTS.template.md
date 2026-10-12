@@ -184,9 +184,10 @@
   local-only state).
 - `snapshotHz` (default 30, cap 100) is a ceiling, not a delivery guarantee. Do
   not default to the highest rate. Start conservative — pass
-  `adaptiveRate: true` with `initialSnapshotHz` around 12-15 and
-  `minSnapshotHz` around 8, or an explicit low fixed `snapshotHz` — and
-  raise it only with diagnostic evidence. Prefer `calibrateRealtimeRoom()`
+  `adaptiveRate: true` (the floor and the starting rate are both 12 Hz) or
+  an explicit fixed `snapshotHz` — and raise the ceiling toward your game's
+  best setting only with diagnostic evidence. You may raise `snapshotHz`
+  (cap 100) and the candidate list to find the best rate for this game. Prefer `calibrateRealtimeRoom()`
   over guessing: it exercises candidate rates against a real two-client
   `RealtimeRoom` pair at a fixed `snapshotHz` (`adaptiveRate: false` on
   the candidate rooms) and recommends the highest rate that is actually
@@ -194,8 +195,8 @@
   extrapolation, held authoritative frames, ack latency, backpressure).
   Optional `evaluate()` can only veto a rate. Write only the returned
   `RealtimeProfile` into `createRealtimeRoom()` (`adaptiveRate: true`,
-  `minSnapshotHz: 8`, `initialSnapshotHz` 12 or the ceiling if lower). If
-  no candidate qualifies, use that floor profile (8 Hz, adaptive); if
+  `minSnapshotHz: 12`, `initialSnapshotHz` 12 or the ceiling if lower). If
+  no candidate qualifies, use that floor profile (12 Hz, adaptive); if
   the sweep is incomplete, calibration throws — fix the run and repeat,
   do not invent a profile. `game.json` `tickRate` is a separate Nakama
   room-loop setting; do not copy `snapshotHz` into it. `publishSnapshot()`
@@ -241,6 +242,12 @@
   `reconnecting`, or `resynchronizing`, lock authoritative input, preserve the
   last rendered state, show a temporary reconnecting message, and wait for an
   authoritative snapshot. Do not assume the player is still host afterward.
+  The lobby controller does the switch for you: `lobby.getState().room.canAct`
+  is true only while connected, and `room.connectionNotice` holds a short
+  message for every other state (or call `describeConnection(room.connection)`
+  for a room you manage yourself). Gate every match control on `canAct` and
+  show the notice in the game's own theme; do not write your own switch over
+  `connection`.
 - For a synchronized room, every control that commits a match action calls
   `dispatch()` while `connection` is `connected`. Decide whether the player
   can act from the latest snapshot, and use that same check for the control

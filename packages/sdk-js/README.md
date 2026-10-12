@@ -55,6 +55,12 @@ room list (`refreshPublicRooms()`) and the per-game leaderboard
 (`loadLeaderboard()`, `loadMoreLeaderboard()`, `submitScore()`). Use
 `lobby.getRoom()` for `dispatch()` and the realtime calls.
 
+While the room is not connected (the page is in the background, the network
+dropped, or the SDK is catching up), `lobby.getState().room.canAct` is false and
+`room.connectionNotice` holds a short message. Gate every match control on
+`canAct` and keep drawing the last state. For a room you manage yourself, call
+`describeConnection(room.connection)`, which returns `{ canAct, notice, terminal }`.
+
 Installing the SDK does not add any screen, and the Loki overlay never draws
 one. Every game builds: create room, join with an invite code, copy invite, and
 start when ready; a Create private room control and a Create public room
@@ -494,8 +500,8 @@ rejection, timeout, or sustained backpressure — with `adaptiveRate: true`:
 const room = client.createRealtimeRoom<RacerState, RacerInput>({
   snapshotHz: 30, // ceiling: never exceeded
   adaptiveRate: true,
-  initialSnapshotHz: 12, // start conservative
-  minSnapshotHz: 8, // floor
+  initialSnapshotHz: 12, // start
+  minSnapshotHz: 12, // floor (the default)
 });
 ```
 
@@ -518,7 +524,7 @@ latency, backpressure). Optional `evaluate()` can only veto a rate:
 import { calibrateRealtimeRoom } from "@lokiplay/sdk";
 
 const { recommended, samples } = await calibrateRealtimeRoom<RacerState, RacerInput>({
-  snapshotHzCandidates: [8, 12, 15, 20, 25, 30],
+  snapshotHzCandidates: [12, 15, 20, 25, 30, 45, 60],
   simulationHz: 60,
   durationMsPerCandidate: 20_000,
   createHostRoom: (candidate) =>
@@ -542,10 +548,10 @@ authenticated identities (two real players, or two isolated test/browser
 sessions); two tabs sharing one signed-in player are not two players. The
 result is one `RealtimeProfile` (`schemaVersion`, `simulationHz`,
 `snapshotHz` as the ceiling, `inputHz`, `interpolationDelayMs`,
-`correctionMs`, `adaptiveRate: true`, `minSnapshotHz: 8`,
+`correctionMs`, `adaptiveRate: true`, `minSnapshotHz: 12`,
 `initialSnapshotHz` 12 or the ceiling if lower) to write into
 `createRealtimeRoom()` only. If no candidate qualifies, the profile is the
-Loki floor (8 Hz, adaptive). If the sweep is incomplete, calibration
+Loki floor (12 Hz, adaptive). If the sweep is incomplete, calibration
 throws. `game.json` `tickRate` stays a separate Nakama room-loop setting
 and must not be copied from `snapshotHz`.
 

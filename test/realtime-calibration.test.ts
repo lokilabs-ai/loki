@@ -174,14 +174,14 @@ test("applyAckLatencyCliffs rejects a p95 cap or cliff without dropping a later 
 });
 
 test("buildRecommendedRealtimeProfile picks the highest qualified rate as an adaptive ceiling", () => {
-  const samples = [sampleAt(8), sampleAt(20), sampleAt(25), sampleAt(30)];
+  const samples = [sampleAt(12), sampleAt(20), sampleAt(25), sampleAt(30)];
   samples[2]!.acceptable = false;
   samples[2]!.rejectionReasons.push("delivery");
   const { recommended, usedFallback } = buildRecommendedRealtimeProfile(samples, { simulationHz: 60 });
   assert.equal(usedFallback, false);
   assert.equal(recommended.snapshotHz, 30);
   assert.equal(recommended.adaptiveRate, true);
-  assert.equal(recommended.minSnapshotHz, 8);
+  assert.equal(recommended.minSnapshotHz, 12);
   assert.equal(recommended.initialSnapshotHz, 12);
   assert.equal(recommended.inputHz, 20);
   assert.equal("tickRate" in recommended, false);
@@ -196,9 +196,9 @@ test("buildRecommendedRealtimeProfile uses the Loki floor when nothing qualifies
   }
   const { recommended, usedFallback } = buildRecommendedRealtimeProfile(samples, { simulationHz: 60 });
   assert.equal(usedFallback, true);
-  assert.equal(recommended.snapshotHz, 8);
-  assert.equal(recommended.minSnapshotHz, 8);
-  assert.equal(recommended.initialSnapshotHz, 8);
+  assert.equal(recommended.snapshotHz, 12);
+  assert.equal(recommended.minSnapshotHz, 12);
+  assert.equal(recommended.initialSnapshotHz, 12);
   assert.equal(recommended.adaptiveRate, true);
   assert.equal("tickRate" in recommended, false);
 });
@@ -209,7 +209,7 @@ test("calibrateRealtimeRoom recommends the highest delivered candidate as an ada
   const { client: guestClient } = await connectedClient(bus);
 
   const result = await calibrateRealtimeRoom<RacerState, RacerInput>({
-    snapshotHzCandidates: [8, 20, 30],
+    snapshotHzCandidates: [12, 20, 30],
     simulationHz: 60,
     durationMsPerCandidate: 400,
     minDeliveryRatio: 0.7,
@@ -229,7 +229,7 @@ test("calibrateRealtimeRoom recommends the highest delivered candidate as an ada
     JSON.stringify(result.samples.map((sample) => ({ hz: sample.candidate.snapshotHz, ok: sample.acceptable, reasons: sample.rejectionReasons }))),
   );
   assert.equal(result.recommended.adaptiveRate, true);
-  assert.equal(result.recommended.minSnapshotHz, 8);
+  assert.equal(result.recommended.minSnapshotHz, 12);
   assert.equal(result.recommended.initialSnapshotHz, 12);
   assert.equal("tickRate" in result.recommended, false);
   assert.ok(result.samples.every((sample) => sample.acceptable));
@@ -241,7 +241,7 @@ test("calibrateRealtimeRoom candidate order does not change the recommended ceil
   const { client: guestClient } = await connectedClient(bus);
 
   const result = await calibrateRealtimeRoom<RacerState, RacerInput>({
-    snapshotHzCandidates: [30, 8, 20],
+    snapshotHzCandidates: [30, 12, 20],
     simulationHz: 60,
     durationMsPerCandidate: 400,
     minDeliveryRatio: 0.7,
@@ -260,7 +260,7 @@ test("calibrateRealtimeRoom evaluate can veto a high rate but cannot withhold th
   const { client: guestClient } = await connectedClient(bus);
 
   const vetoed = await calibrateRealtimeRoom<RacerState, RacerInput>({
-    snapshotHzCandidates: [8, 20],
+    snapshotHzCandidates: [12, 20],
     simulationHz: 60,
     durationMsPerCandidate: 400,
     minDeliveryRatio: 0.7,
@@ -270,7 +270,7 @@ test("calibrateRealtimeRoom evaluate can veto a high rate but cannot withhold th
     driveHost: (host, tick) => host.publishSnapshot({ tick }, { simulationTick: tick }),
     evaluate: ({ candidate }) => ({ acceptable: candidate.snapshotHz < 20 }),
   });
-  assert.equal(vetoed.recommended.snapshotHz, 8);
+  assert.equal(vetoed.recommended.snapshotHz, 12);
   assert.equal(vetoed.usedFallback, false);
   assert.ok(vetoed.samples.find((sample) => sample.candidate.snapshotHz === 20)?.rejectionReasons.includes("evaluate"));
 
@@ -286,7 +286,7 @@ test("calibrateRealtimeRoom evaluate can veto a high rate but cannot withhold th
     evaluate: () => ({ acceptable: false }),
   });
   assert.equal(allVetoed.usedFallback, true);
-  assert.equal(allVetoed.recommended.snapshotHz, 8);
+  assert.equal(allVetoed.recommended.snapshotHz, 12);
   assert.ok(allVetoed.samples.every((sample) => sample.acceptable === false));
 });
 
@@ -328,7 +328,7 @@ test("calibrateRealtimeRoom requires diagnostics, fixed-rate candidates, and a c
 
   await assert.rejects(
     calibrateRealtimeRoom<RacerState, RacerInput>({
-      snapshotHzCandidates: [8, 30],
+      snapshotHzCandidates: [12, 30],
       simulationHz: 60,
       durationMsPerCandidate: 40,
       createHostRoom: (candidate) => {

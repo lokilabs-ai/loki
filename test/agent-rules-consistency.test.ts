@@ -23,6 +23,8 @@ const shared: Array<[RegExp, RegExp]> = [
   [/Build these screens in the game's own theme/, /Build these screens in the game's own theme/],
   [/Public rooms, Match, and the Leaderboard are required in every game/, /Public rooms, Match, and the Leaderboard are required in every game/],
   [/create a fresh `createSynchronizedRoom\(\)` for the next match/, /create a fresh createSynchronizedRoom\(\) for the next match/],
+  [/room\.canAct/, /room\.canAct/],
+  [/room\.connectionNotice/, /room\.connectionNotice/],
   [/Do not put credentials, access tokens/, /Do not put credentials, access tokens/],
   [/25 MiB/, /25 MiB/],
   [/press Reactivate for this project/, /press Reactivate for this project/],

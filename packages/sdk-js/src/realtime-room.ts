@@ -51,7 +51,7 @@ export const REALTIME_ROOM_MAX_SEEN_EFFECT_IDS = 256;
 // the room starts conservatively and only climbs toward the ceiling after a
 // sustained run of clean acknowledgements, but backs off immediately (and
 // further) on rejection, timeout, or sustained backpressure.
-export const REALTIME_ROOM_DEFAULT_MIN_SNAPSHOT_HZ = 8;
+export const REALTIME_ROOM_DEFAULT_MIN_SNAPSHOT_HZ = 12;
 export const REALTIME_ROOM_DEFAULT_INITIAL_SNAPSHOT_HZ = 12;
 // Multiplicative decrease applied to the current target on rejection/timeout.
 export const REALTIME_ROOM_RATE_DECREASE_FACTOR = 0.5;
