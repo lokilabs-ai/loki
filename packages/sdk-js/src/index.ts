@@ -1487,13 +1487,13 @@ export class FirstPartyTransport implements LokiTransport {
     const parsed = ListPublicRoomsInputSchema.parse({
       limit: input.limit ?? 50,
     });
-    return ListPublicRoomsResultSchema.parse(
-      payload<ListPublicRoomsResult>(
-        await wrapLokiCall(() =>
-          this.#client.rpc(this.#requireSession(), "loki_list_public_rooms", parsed),
-        ),
+    const body = payload<{ rooms?: unknown }>(
+      await wrapLokiCall(() =>
+        this.#client.rpc(this.#requireSession(), "loki_list_public_rooms", parsed),
       ),
     );
+    // Nakama RPC bodies include ok/code and the strict schema rejects them.
+    return ListPublicRoomsResultSchema.parse({ rooms: body?.rooms });
   }
 
   async joinPublicRoom(input: {

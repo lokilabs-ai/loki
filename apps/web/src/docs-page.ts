@@ -932,8 +932,6 @@ Installing Loki is not a finished game. Each title still requires fine-tuning af
 - Safety: https://docs.lokiplay.cc/safety
 - MCP: https://docs.lokiplay.cc/mcp
 - App: https://app.lokiplay.cc/
-- Play: https://play.lokiplay.cc/
-- API: https://api.lokiplay.cc
 
 ## Rules
 - Use @lokiplay/sdk. Do not import Nakama or Socket.IO.

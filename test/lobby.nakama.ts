@@ -202,3 +202,35 @@ test("a realtime room joins and delivers a host snapshot through local Nakama", 
   );
   assert.deepEqual(guestRoom.getSnapshot().state, { n: 4 });
 });
+
+test("public rooms list, an unscored leaderboard lists empty, and leaving a closed room succeeds", async (t) => {
+  await waitForNakama();
+  const runId = crypto.randomUUID();
+  const projectId = crypto.randomUUID();
+  const [host, guest] = await Promise.all([
+    livePlayer("pub-host", projectId, runId),
+    livePlayer("pub-guest", projectId, runId),
+  ]);
+  t.after(async () => {
+    await Promise.all([host.close(), guest.close()]);
+  });
+
+  const hostLobby = host.client.createLobby({
+    makeRoom: () => host.client.createRealtimeRoom<{ n: number }, { throttle: number }>({ snapshotHz: 10 }),
+    minPlayers: 2,
+  });
+  await hostLobby.createPublic();
+  let listed = await guest.client.listPublicRooms();
+  for (let attempt = 0; attempt < 40 && listed.rooms.length === 0; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    listed = await guest.client.listPublicRooms();
+  }
+  assert.equal(listed.rooms.length, 1, JSON.stringify(hostLobby.getState()));
+
+  const board = await guest.client.listLeaderboard(`never-scored-${runId.slice(0, 8)}`);
+  assert.deepEqual(board.records, []);
+
+  await hostLobby.leave();
+  // A match that no longer exists must not turn leaving into an error.
+  await host.transport.leaveRoom?.(`${crypto.randomUUID()}.lokiplay-nakama`);
+});

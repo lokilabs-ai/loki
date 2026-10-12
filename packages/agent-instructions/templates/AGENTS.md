@@ -117,33 +117,37 @@
 - If `lokiplay init` created `game.json`, its `multiplayer` values (host,
   `maxPlayers` 8, `tickRate` 30) are placeholders, not a confirmed profile.
   Replace them with the confirmed values for this game.
-- Classify authority from the code that advances match state, not from the
-  genre or the frame rate. Turn-based or event-driven means that state
-  changes only when a player action is committed. Continuous realtime means
-  state advances on a tick even when nobody has just pressed a button. If
-  that reading is ambiguous, stop and ask the creator what the match state
-  depends on. Do not guess.
-- One `game.json` has one `authority` for the whole project. If modes
-  disagree, say so and ask which one this project is.
-- Host is more suitable for turn-based and event-driven games. Write
-  `"authority": "host"`, omit `step`, and use `createSynchronizedRoom()`.
-- Server is more suitable for continuous realtime games. Tell the creator
-  what the update path does, then ask them to confirm server. Write
+- Host authority is the default for every game, turn-based or continuous
+  realtime. Write `"authority": "host"`, omit `step`, and use
+  `createSynchronizedRoom()` for turn-based or event-driven state or
+  `createRealtimeRoom()` for continuous realtime. Classify the room type from
+  the code that advances match state, not from the genre or the frame rate:
+  turn-based or event-driven means state changes only when a player action is
+  committed; continuous realtime means state advances on a tick even when
+  nobody has just pressed a button. If that reading is ambiguous, stop and
+  ask the creator what the match state depends on. Do not guess.
+- Server authority is opt-in. Enable it only when the creator asks for it.
+  Never choose it yourself, and never suggest it because a game is realtime.
+  It needs a paid plan (Loki or Loki Pro; Free ships host authority only, and
+  the ship is refused otherwise) and a pure step module, so tell the creator
+  both before you start. When the creator asks, write
   `"authority": "server"` and `step`. Do not elect a player host. Server
   rooms are browser-only, run in Singapore, and end if the step fails; they
   do not fall back to a player. That is fairness, not lower latency. The
   viewer clock follows `tickRate`. Leave `simulationHz` as the local
   prediction step. Do not set `simulationHz` equal to `tickRate` to unstick
   presentation.
+- One `game.json` has one `authority` for the whole project. If modes
+  disagree, say so and ask which one this project is.
 - Before compiling `step`, change the state update so the next state depends
   only on the previous state and this tick's inputs. Drawing, sound, and
   asset loads stay in the browser. If the update reads the DOM, the clock,
   randomness, or assets, remove those calls from it. A seed or the tick
   index, when the game needs one, is an input field, not something the
-  module reads itself. If you cannot make that change, say so and do not
-  write `"authority": "server"`. Host realtime (`createRealtimeRoom()` with
-  `"authority": "host"`) can ship until the update is pure; say that is why,
-  and do not describe host as the better fit for a continuous game.
+  module reads itself. If you cannot make that change, say so and keep
+  `"authority": "host"`. The worker also meters each tick (a fixed budget of
+  guest function calls, 20 ms, and 3 MiB of memory), so keep the step cheap
+  and check it against those limits before you ship.
 - `step` names a compiled `.wasm` module (`modulePath`) exporting exactly
   one function, `step`, and importing nothing — no WASI, clocks, randomness,
   or host functions. Compile it yourself. The validator rejects imports, and

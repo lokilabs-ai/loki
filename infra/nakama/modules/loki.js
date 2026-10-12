@@ -1197,7 +1197,16 @@ var rpcRoomSnapshot = function (ctx, logger, nk, payload) {
 };
 
 var rpcLeaveRoom = function (ctx, logger, nk, payload) {
-  return signalRoom(ctx, nk, payload, "depart");
+  try {
+    return signalRoom(ctx, nk, payload, "depart");
+  } catch (error) {
+    // A room that already ended has nobody left to depart from, so leaving it
+    // succeeds instead of surfacing Nakama's "match not found".
+    if (/match not found/i.test(String(error && error.message ? error.message : error))) {
+      return JSON.stringify({ ok: true, code: "OK" });
+    }
+    throw error;
+  }
 };
 
 var rpcRoomUpdate = function (ctx, logger, nk, payload) {
@@ -3658,6 +3667,16 @@ var rpcLeaderboardList = function (ctx, logger, nk, payload) {
     throw codedError("INVALID_MESSAGE", "limit must be between 1 and 100");
   }
   var projectId = tenantForUser(nk, ctx.userId);
+  // Creating is idempotent and keeps a board nobody has scored on yet from
+  // failing the list with "leaderboard not found".
+  nk.leaderboardCreate(
+    leaderboardName(nk, projectId, input.leaderboardId),
+    true,
+    "desc",
+    "best",
+    "",
+    {},
+  );
   var result = nk.leaderboardRecordsList(
     leaderboardName(nk, projectId, input.leaderboardId),
     [],
