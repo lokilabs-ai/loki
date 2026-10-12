@@ -1,5 +1,4 @@
 import {
-  REALTIME_ROOM_DEFAULT_INITIAL_SNAPSHOT_HZ,
   REALTIME_ROOM_DEFAULT_MIN_SNAPSHOT_HZ,
   REALTIME_ROOM_MAX_INPUT_HZ,
   REALTIME_ROOM_SUSTAINED_BACKPRESSURE_MS,
@@ -79,7 +78,7 @@ export type RealtimeCalibrationOptions<State, Input> = {
   /**
    * Optional game-supplied veto for a candidate (e.g. a measured
    * ball/paddle/heading error). Cannot withhold a recommendation: if
-   * every candidate is vetoed, calibration still returns the Loki floor.
+   * every candidate is vetoed, calibration still returns a fixed 12 Hz profile.
    */
   evaluate?(sample: {
     candidate: RealtimeCalibrationCandidate;
@@ -101,7 +100,7 @@ export type RealtimeCalibrationOptions<State, Input> = {
 export type RealtimeCalibrationResult = {
   recommended: RealtimeProfile;
   samples: RealtimeCalibrationSample[];
-  /** True when no candidate passed the gates and the Loki floor profile was used. */
+  /** True when no candidate passed the gates and the fixed 12 Hz profile was used. */
   usedFallback: boolean;
 };
 
@@ -245,13 +244,11 @@ export function buildRecommendedRealtimeProfile(
     simulationHz: options.simulationHz,
     snapshotHz,
     inputHz,
-    interpolationDelayMs: options.interpolationDelayMs,
-    correctionMs: options.correctionMs,
-    adaptiveRate: true,
-    minSnapshotHz: REALTIME_ROOM_DEFAULT_MIN_SNAPSHOT_HZ,
-    initialSnapshotHz: usedFallback
-      ? REALTIME_ROOM_DEFAULT_MIN_SNAPSHOT_HZ
-      : Math.min(REALTIME_ROOM_DEFAULT_INITIAL_SNAPSHOT_HZ, snapshotHz),
+    ...(options.interpolationDelayMs !== undefined
+      ? { interpolationDelayMs: options.interpolationDelayMs }
+      : {}),
+    ...(options.correctionMs !== undefined ? { correctionMs: options.correctionMs } : {}),
+    adaptiveRate: false,
   };
   return { recommended, usedFallback };
 }
@@ -260,8 +257,8 @@ export function buildRecommendedRealtimeProfile(
  * Exercises each candidate snapshot rate against a real two-client
  * RealtimeRoom pair and recommends the highest rate that is actually
  * delivered without a Loki-owned cliff. If every completed candidate
- * fails the gates, returns the Loki floor profile (12 Hz, adaptive)
- * instead of throwing. Throws only when the harness is broken
+ * fails the gates, returns a fixed 12 Hz profile with the adaptive rate
+ * off instead of throwing. Throws only when the harness is broken
  * (empty list, incomplete candidate, no diagnostics, no guest frames,
  * or a candidate run with adaptiveRate enabled).
  */

@@ -176,7 +176,7 @@ const pages: Record<
           <h2>What is in Layer 1</h2>
           <p>Private and unlisted hosting. Immutable releases on a stable play link. Host-authoritative rooms, and opt-in server authority when the build includes a pure step module. Invites, public rooms, and fill-N matchmaking. Presence. Lobby and match chat. Private leaderboards. Reconnect and host migration. JavaScript SDK.</p>
           <h2>What is not in Layer 1</h2>
-          <p>A public catalog listing. Tips, ads, and payouts. Friends, parties, and public leaderboards. Ranked anti-cheat. Native clients in realtime rooms. A creator-uploaded Node server. Server authority is a Loki-run step module, not your own backend.</p>
+          <p>Tips, ads, and payouts. Friends, parties, and public leaderboards. Ranked anti-cheat. Native clients in realtime rooms. A creator-uploaded Node server. Server authority is a Loki-run step module, not your own backend.</p>
 `,
   },
   "/quickstart": {
@@ -228,7 +228,7 @@ await lobby.createPrivate();               // or createPublic(), joinWithCode(co
     "enabled": true,
     "authority": "host",
     "maxPlayers": 8,
-    "tickRate": 10
+    "tickRate": 30
   },
   "networkAllowlist": []
 }`)}
@@ -298,9 +298,8 @@ npx lokiplay@${v} ship`)}
             ],
           )}
           <p>Choose by how <strong>authoritative state</strong> progresses, not by genre or frame rate. A 60 FPS chessboard is still synchronized.</p>
-          <h2>Layer 1 and Layer 2</h2>
+          <h2>Layer 1</h2>
           <p><strong>Layer 1</strong> is hosting and multiplayer. Private and unlisted links. Friends can play an ugly draft.</p>
-          <p><strong>Layer 2</strong> is a reviewed public catalog page. It is closed. You cannot publish into the catalog from this release.</p>
           <h2>Identity</h2>
           <p>Players authenticate through Loki. Hosted games do that through <code>createHostedLokiClient()</code>. The game must not mint its own player IDs or call the multiplayer runtime with raw platform credentials.</p>
 `,
@@ -346,7 +345,7 @@ npx lokiplay@${v} ship`)}
           )}
           <p><code>ship</code> waits, then activates only a ready release, then checks that the playable URL returns a Loki game page (<code>loki:init</code> in the shell).</p>
           <h2>Playable URL</h2>
-          <p>A successful ship prints a playable URL. Later ships keep that same link. Private play requires creator membership or a signed, expiring play invite. Unlisted play is capability-based. Projects are not enumerable. The public catalog is closed.</p>
+          <p>A successful ship prints a playable URL. Later ships keep that same link. Private play requires creator membership or a signed, expiring play invite. Unlisted play is capability-based. Projects are not enumerable.</p>
           <h2>Activate and replace</h2>
           <p>Each successful ship is a new immutable deployment. Activating it replaces what the play link serves. You cannot edit files on an old release in place.</p>
           <p>Ship again for any change you want players to see. Saving the repository, editing <code>game.json</code>, or changing authority does not update the play link. The link changes only when a new release is activated. Ask players to reload after that ship. Rooms already open keep the authority they started with.</p>
@@ -365,7 +364,7 @@ npx lokiplay@${v} ship`)}
     "enabled": true,
     "authority": "host",
     "maxPlayers": 8,
-    "tickRate": 10
+    "tickRate": 30
   },
   "networkAllowlist": []
 }`)}
@@ -396,7 +395,7 @@ npx lokiplay@${v} ship`)}
             ],
           )}
           <p><code>tickRate</code> is a deployment-time room-loop hint. Do not copy a realtime <code>snapshotHz</code> into it. Realtime publish is a separate ceiling (default 30 Hz, cap 100 Hz) set on the room.</p>
-          <p><code>npx lokiplay init</code> and <code>connect</code> write this file if it is missing. Default <code>maxPlayers</code> is 8 and <code>tickRate</code> is 10. Default <code>authority</code> is <code>"host"</code>. <code>"server"</code> is valid only with <code>step</code> (<code>abiVersion</code>, <code>modulePath</code>, <code>sha256</code>).</p>
+          <p><code>npx lokiplay init</code> and <code>connect</code> write this file if it is missing. Default <code>maxPlayers</code> is 8 and <code>tickRate</code> is 30. Default <code>authority</code> is <code>"host"</code>. <code>"server"</code> is valid only with <code>step</code> (<code>abiVersion</code>, <code>modulePath</code>, <code>sha256</code>).</p>
           <p>A new manifest does nothing to the live game until you ship. The play link keeps serving the last activated release.</p>
 `,
   },
@@ -545,9 +544,6 @@ await room.dispatch({ type: "move", from: "e2", to: "e4" });`)}
           <h2>Loop</h2>
           ${codeBlock(`const room = client.createRealtimeRoom<RacerState, RacerInput>({
   snapshotHz: 30,
-  adaptiveRate: true,
-  initialSnapshotHz: 12,
-  minSnapshotHz: 12,
   diagnostics: true,
   predict(state, localInput, dtSeconds) { return state; },
   interpolate(from, to, t) { return to; },
@@ -564,9 +560,9 @@ function frame(now: number) {
 }`)}
           <p>Drive rendering from one game-owned <code>requestAnimationFrame</code> loop. Call <code>advanceFrame()</code> and <code>getRenderState()</code> at most once per frame. <code>setInput()</code> is safe every frame; the SDK paces the network send.</p>
           <h2>Rates</h2>
-          <p><code>snapshotHz</code> is a ceiling (default 30, cap 100), not a delivery guarantee. Start with <code>adaptiveRate: true</code>; the floor and the starting rate are 12 Hz. Raise <code>snapshotHz</code> within the ceiling to find the best rate for the game, with diagnostic evidence. Do not copy <code>snapshotHz</code> into <code>game.json</code> <code>tickRate</code>.</p>
+          <p><code>snapshotHz</code> is a ceiling (default 30, cap 100), not a delivery guarantee. Leave <code>adaptiveRate</code> off: omit it or pass <code>false</code>, and publish at a fixed <code>snapshotHz</code>. Raise that fixed rate within the ceiling to find the best rate for the game, with diagnostic evidence. The 12 Hz floor applies only when someone explicitly turns the adaptive rate on. Do not copy <code>snapshotHz</code> into <code>game.json</code> <code>tickRate</code>.</p>
           <h2>Calibrate</h2>
-          <p>Prefer <code>calibrateRealtimeRoom()</code> over guessing. It needs two distinct player identities — two isolated browser profiles or two real players, not two tabs of one signed-in account. Write only the returned <code>RealtimeProfile</code> into <code>createRealtimeRoom()</code>.</p>
+          <p>Prefer <code>calibrateRealtimeRoom()</code> over guessing. It needs two distinct player identities — two isolated browser profiles or two real players, not two tabs of one signed-in account. Write the recommended <code>snapshotHz</code> into <code>createRealtimeRoom()</code> and leave <code>adaptiveRate</code> off.</p>
           ${codeBlock(`import { calibrateRealtimeRoom } from "@lokiplay/sdk";
 
 const { recommended } = await calibrateRealtimeRoom({
@@ -586,8 +582,14 @@ const { recommended } = await calibrateRealtimeRoom({
   driveGuest: (guest) => guest.setInput(representativeControl()),
 });
 
-const room = client.createRealtimeRoom({ ...recommended, predict, interpolate });`)}
-          <p>If calibration throws, fix the harness and rerun. If no candidate qualifies, use the floor profile (12 Hz, adaptive). Fine-tuning a racer after install means running this sweep on the real wiring, not copying another game’s Hertz.</p>
+const room = client.createRealtimeRoom({
+  snapshotHz: recommended.snapshotHz,
+  inputHz: recommended.inputHz,
+  simulationHz: recommended.simulationHz,
+  predict,
+  interpolate,
+});`)}
+          <p>If calibration throws, fix the harness and rerun. If no candidate qualifies, publish at a fixed 12 Hz and leave <code>adaptiveRate</code> off. Write the recommended <code>snapshotHz</code> into the room. Do not copy <code>adaptiveRate</code>, <code>minSnapshotHz</code>, or <code>initialSnapshotHz</code> from the returned profile. Fine-tuning a racer after install means running this sweep on the real wiring, not copying another game’s Hertz.</p>
           <h2>Render streams</h2>
           <p>Predict the local entity. Interpolate remotes. Use <code>getRenderStates()</code> / <code>composeRenderState</code>, or <code>createEntityCompositor</code> / <code>createLocalPrediction</code> with bulk <code>setEntities</code>. Use <code>sendEffect()</code> / <code>onConfirmedEffect()</code> for authoritative events such as collisions.</p>
 `,
@@ -844,14 +846,14 @@ npx lokiplay@${v} ship`)}
             [
               ["<code>maxPlayers</code> in game.json", "1–16"],
               ["Manifest <code>tickRate</code>", "1–30"],
-              ["Realtime snapshot publish", "Ceiling 30 Hz; start conservative"],
+              ["Realtime snapshot publish", "Fixed rate. Default ceiling 30 Hz, cap 100 Hz. The 12 Hz floor applies only with adaptiveRate on"],
               ["Realtime input", "Paced by inputHz"],
               ["Allowlist entries", "10"],
               ["Synchronized message", "16,384 bytes"],
               ["Protocol numbers", "Finite safe integers"],
             ],
           )}
-          <p>Free is one game, two rooms at the same time, four players per room, and host authority only. Loki is 20 games, eight players per room, and both host and server authority. Loki Pro is unlimited games and links, also with both authority modes. See <a href="https://lokiplay.cc/pricing">Pricing</a>.</p>
+          <p>Free is 2 stored games, 1 playable link, 100 MiB of builds, two rooms at the same time, four players per room, and host authority only. Loki is 20 stored games, 20 playable links, 500 MiB of builds, eight players per room, and both host and server authority. Loki Pro is unlimited games and links, 2 GiB of builds, 16 players per room, and both authority modes. See <a href="https://lokiplay.cc/pricing">Pricing</a>.</p>
           <p>Treat <code>PROJECT_SUSPENDED</code> as stop-the-line.</p>
 `,
   },
@@ -945,7 +947,6 @@ Installing Loki is not a finished game. Each title still requires fine-tuning af
 - Production multiplayer only from a Loki-hosted build.
 - Login: LOKI_API_URL=https://api.lokiplay.cc npx lokiplay@${v} login
 - No inline scripts, remote fonts, or forms.
-- Layer 2 public catalog is closed.
 - Loki hosts finished web JavaScript games only. Support for Unity, Godot, iOS, and Android are coming soon. Do not install Loki into a native or engine project.
 
 ## Full docs

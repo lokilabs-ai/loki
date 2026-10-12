@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "cc.lokiplay"
-version = "0.5.7"
+version = "0.5.8"
 
 repositories { mavenCentral() }
 

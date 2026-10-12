@@ -18,11 +18,7 @@ type RacerInput = { throttle: number };
 
 const profileKeys = [
   "adaptiveRate",
-  "correctionMs",
-  "initialSnapshotHz",
   "inputHz",
-  "interpolationDelayMs",
-  "minSnapshotHz",
   "schemaVersion",
   "simulationHz",
   "snapshotHz",
@@ -173,22 +169,22 @@ test("applyAckLatencyCliffs rejects a p95 cap or cliff without dropping a later 
   assert.ok(cleanPath.every((sample) => sample.acceptable));
 });
 
-test("buildRecommendedRealtimeProfile picks the highest qualified rate as an adaptive ceiling", () => {
+test("buildRecommendedRealtimeProfile picks the highest qualified rate as a fixed snapshotHz", () => {
   const samples = [sampleAt(12), sampleAt(20), sampleAt(25), sampleAt(30)];
   samples[2]!.acceptable = false;
   samples[2]!.rejectionReasons.push("delivery");
   const { recommended, usedFallback } = buildRecommendedRealtimeProfile(samples, { simulationHz: 60 });
   assert.equal(usedFallback, false);
   assert.equal(recommended.snapshotHz, 30);
-  assert.equal(recommended.adaptiveRate, true);
-  assert.equal(recommended.minSnapshotHz, 12);
-  assert.equal(recommended.initialSnapshotHz, 12);
+  assert.equal(recommended.adaptiveRate, false);
+  assert.equal(recommended.minSnapshotHz, undefined);
+  assert.equal(recommended.initialSnapshotHz, undefined);
   assert.equal(recommended.inputHz, 20);
   assert.equal("tickRate" in recommended, false);
   assert.deepEqual(Object.keys(recommended).sort(), [...profileKeys]);
 });
 
-test("buildRecommendedRealtimeProfile uses the Loki floor when nothing qualifies", () => {
+test("buildRecommendedRealtimeProfile uses a fixed 12 Hz when nothing qualifies", () => {
   const samples = [sampleAt(10), sampleAt(20)];
   for (const sample of samples) {
     sample.acceptable = false;
@@ -197,13 +193,13 @@ test("buildRecommendedRealtimeProfile uses the Loki floor when nothing qualifies
   const { recommended, usedFallback } = buildRecommendedRealtimeProfile(samples, { simulationHz: 60 });
   assert.equal(usedFallback, true);
   assert.equal(recommended.snapshotHz, 12);
-  assert.equal(recommended.minSnapshotHz, 12);
-  assert.equal(recommended.initialSnapshotHz, 12);
-  assert.equal(recommended.adaptiveRate, true);
+  assert.equal(recommended.minSnapshotHz, undefined);
+  assert.equal(recommended.initialSnapshotHz, undefined);
+  assert.equal(recommended.adaptiveRate, false);
   assert.equal("tickRate" in recommended, false);
 });
 
-test("calibrateRealtimeRoom recommends the highest delivered candidate as an adaptive ceiling", async () => {
+test("calibrateRealtimeRoom recommends the highest delivered candidate as a fixed snapshotHz", async () => {
   const bus = new RealtimeBus();
   const { client: hostClient } = await connectedClient(bus);
   const { client: guestClient } = await connectedClient(bus);
@@ -228,9 +224,9 @@ test("calibrateRealtimeRoom recommends the highest delivered candidate as an ada
     30,
     JSON.stringify(result.samples.map((sample) => ({ hz: sample.candidate.snapshotHz, ok: sample.acceptable, reasons: sample.rejectionReasons }))),
   );
-  assert.equal(result.recommended.adaptiveRate, true);
-  assert.equal(result.recommended.minSnapshotHz, 12);
-  assert.equal(result.recommended.initialSnapshotHz, 12);
+  assert.equal(result.recommended.adaptiveRate, false);
+  assert.equal(result.recommended.minSnapshotHz, undefined);
+  assert.equal(result.recommended.initialSnapshotHz, undefined);
   assert.equal("tickRate" in result.recommended, false);
   assert.ok(result.samples.every((sample) => sample.acceptable));
 });

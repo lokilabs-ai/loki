@@ -106,7 +106,7 @@ function pricingPlans(): string {
               <li>Unlimited games</li>
               <li>2 GiB of builds</li>
               <li>Unlimited links</li>
-              <li>8 players per room</li>
+              <li>16 players per room</li>
               <li>Host and server authoritative</li>
             </ul>
             <a class="button" href="https://app.lokiplay.cc/signup">Get Loki Pro</a>
@@ -391,7 +391,7 @@ ${pricingPlans()}
           </details>
           <details class="faq-item">
             <summary>How much does Loki cost?</summary>
-            <p>Loki is free to start on the free plan, which includes one game, two rooms at the same time, and four players per room.</p>
+            <p>Loki is free to start on the free plan, which includes 2 stored games, 1 playable link, 100 MiB of builds, two rooms at the same time, and four players per room.</p>
           </details>
         </div>
       </div>
@@ -547,15 +547,14 @@ const examplesMain = `
         <div>
           <p class="eyebrow">Examples</p>
           <h1 class="display" id="page-title">Small games. Real players.</h1>
-          <p class="lede">These are the kinds of games Loki is for: short sessions, a handful of people, and a link you can send tonight. The live catalog is the source of truth.</p>
+          <p class="lede">These are the kinds of games Loki is for: short sessions, a handful of people, and a link you can send tonight.</p>
           <div class="page-actions">
-            <a class="button button-primary" href="https://play.lokiplay.cc/">Browse the catalog</a>
-            <a class="button" href="https://app.lokiplay.cc/signup">Ship yours</a>
+            <a class="button button-primary" href="https://app.lokiplay.cc/signup">Ship yours</a>
           </div>
         </div>
         <aside class="page-aside" aria-label="Example notes">
           <div><strong>Not demos</strong><p>Each card is a hosted, playable shape—not a marketing render.</p></div>
-          <div><strong>Catalog first</strong><p>When a game is public, it lives on play.lokiplay.cc.</p></div>
+          <div><strong>One link</strong><p>Each game lives at its own play link on play.lokiplay.cc.</p></div>
         </aside>
       </div>
     </section>
@@ -635,8 +634,7 @@ ${pricingPlans()}
             <tr><td>Stored games</td><td>2</td><td>20</td><td>Unlimited</td></tr>
             <tr><td>Active games</td><td>1</td><td>20</td><td>Unlimited</td></tr>
             <tr><td>Stored builds</td><td>100 MiB</td><td>500 MiB</td><td>2 GiB</td></tr>
-            <tr><td>Players per room</td><td>4</td><td>8</td><td>8</td></tr>
-            <tr><td>Public catalog</td><td>Closed</td><td>Closed</td><td>Closed</td></tr>
+            <tr><td>Players per room</td><td>4</td><td>8</td><td>16</td></tr>
             <tr><td>Authority</td><td>Host</td><td>Host and server</td><td>Host and server</td></tr>
           </tbody>
         </table>
@@ -717,7 +715,7 @@ const pages: Record<
   "/distribution": {
     title: "Distribution — Loki",
     description:
-      "Keep games private while you build, then list them in the Loki catalog.",
+      "Keep games private while you build, then share the play link.",
     main: productMain,
   },
   "/agents": {

@@ -383,11 +383,12 @@ configured for 30 Hz that only actually gets ~8 Hz delivered (a slow guest,
 a saturated in-flight budget, sustained rate limiting) presents *worse*
 than a room honestly configured near what it can sustain, because
 interpolation/extrapolation assume the configured cadence unless enough
-arrival samples exist to correct that assumption (see below). Start with a
-conservative rate (`adaptiveRate: true`, or an explicit low `snapshotHz`)
-and raise it only with diagnostic evidence — ideally from
-`calibrateRealtimeRoom()` (see "Adaptive rate and calibration" below) —
-rather than assuming the cap is the right default for every game.
+arrival samples exist to correct that assumption (see below). Leave
+`adaptiveRate` off and publish at a fixed `snapshotHz`. Raise that fixed
+rate only with diagnostic evidence — ideally from `calibrateRealtimeRoom()`
+(see "Adaptive rate and calibration" below) — rather than assuming the cap
+is the right default for every game. The 12 Hz floor applies only when
+`adaptiveRate` is explicitly turned on.
 
 Every `publishSnapshot()` submission is tracked individually
 (by a runtime-assigned `hostSnapshotSequence`) until it is accepted,
@@ -547,11 +548,10 @@ never inspects `State`. `hostClient` and `guestClient` need two distinct
 authenticated identities (two real players, or two isolated test/browser
 sessions); two tabs sharing one signed-in player are not two players. The
 result is one `RealtimeProfile` (`schemaVersion`, `simulationHz`,
-`snapshotHz` as the ceiling, `inputHz`, `interpolationDelayMs`,
-`correctionMs`, `adaptiveRate: true`, `minSnapshotHz: 12`,
-`initialSnapshotHz` 12 or the ceiling if lower) to write into
-`createRealtimeRoom()` only. If no candidate qualifies, the profile is the
-Loki floor (12 Hz, adaptive). If the sweep is incomplete, calibration
+`snapshotHz`, `inputHz`, `adaptiveRate: false`) to write into
+`createRealtimeRoom()`. It does not turn the adaptive rate on. If no
+candidate qualifies, the profile is a fixed 12 Hz with `adaptiveRate` off.
+If the sweep is incomplete, calibration
 throws. `game.json` `tickRate` stays a separate Nakama room-loop setting
 and must not be copied from `snapshotHz`.
 

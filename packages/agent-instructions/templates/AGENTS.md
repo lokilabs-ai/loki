@@ -187,20 +187,22 @@
   snapshots compact and self-contained (no references to transient
   local-only state).
 - `snapshotHz` (default 30, cap 100) is a ceiling, not a delivery guarantee. Do
-  not default to the highest rate. Start conservative — pass
-  `adaptiveRate: true` (the floor and the starting rate are both 12 Hz) or
-  an explicit fixed `snapshotHz` — and raise the ceiling toward your game's
-  best setting only with diagnostic evidence. You may raise `snapshotHz`
-  (cap 100) and the candidate list to find the best rate for this game. Prefer `calibrateRealtimeRoom()`
+  not default to the highest rate. Leave `adaptiveRate` off: omit it or pass
+  `false`, and publish at a fixed `snapshotHz`. Raise that fixed rate toward
+  the game's best setting only with diagnostic evidence. You may raise
+  `snapshotHz` (cap 100) and the candidate list to find the best rate for this
+  game. The 12 Hz floor applies only when someone explicitly turns the adaptive
+  rate on. Prefer `calibrateRealtimeRoom()`
   over guessing: it exercises candidate rates against a real two-client
   `RealtimeRoom` pair at a fixed `snapshotHz` (`adaptiveRate: false` on
   the candidate rooms) and recommends the highest rate that is actually
   delivered without a Loki-owned cliff (acceptance, delivery match,
   extrapolation, held authoritative frames, ack latency, backpressure).
-  Optional `evaluate()` can only veto a rate. Write only the returned
-  `RealtimeProfile` into `createRealtimeRoom()` (`adaptiveRate: true`,
-  `minSnapshotHz: 12`, `initialSnapshotHz` 12 or the ceiling if lower). If
-  no candidate qualifies, use that floor profile (12 Hz, adaptive); if
+  Optional `evaluate()` can only veto a rate. Write the recommended
+  `snapshotHz` into `createRealtimeRoom()` and leave `adaptiveRate` off. Do
+  not copy `adaptiveRate`, `minSnapshotHz`, or `initialSnapshotHz` from the
+  returned profile. If no candidate qualifies, publish at a fixed 12 Hz with
+  `adaptiveRate` off; if
   the sweep is incomplete, calibration throws — fix the run and repeat,
   do not invent a profile. `game.json` `tickRate` is a separate Nakama
   room-loop setting; do not copy `snapshotHz` into it. `publishSnapshot()`
