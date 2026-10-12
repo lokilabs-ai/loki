@@ -186,19 +186,15 @@ async function hostedGame(
 }
 
 const stableSource = bundleSource("1.0.0", "export const generation = 'stable';");
-const candidateSource = bundleSource("1.1.0", "export const generation = 'candidate';");
 
 function config(overrides: Partial<HostedSdkConfig> = {}): HostedSdkConfig {
   return {
     stable: hostedSdkBundleFromSource(stableSource),
-    candidate: hostedSdkBundleFromSource(candidateSource),
-    serve: "stable",
-    canaryProjectIds: [],
     ...overrides,
   };
 }
 
-test("game host serves stable by default, revalidates, and varies on Host", async (t) => {
+test("game host serves the hosted SDK, revalidates, and varies on Host", async (t) => {
   const { get, project, logs } = await hostedGame(t, config());
   const response = await get("/loki/sdk.js");
   assert.equal(response.status, 200);
@@ -208,7 +204,6 @@ test("game host serves stable by default, revalidates, and varies on Host", asyn
   assert.doesNotMatch(response.headers.get("cache-control") ?? "", /immutable/);
   assert.equal(response.headers.get("vary"), "Host");
   assert.equal(response.headers.get("x-loki-sdk-version"), "1.0.0");
-  assert.equal(response.headers.get("x-loki-sdk-generation"), "stable");
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   const etag = response.headers.get("etag")!;
   assert.match(etag, /^"[0-9a-f]{32}"$/);
@@ -220,37 +215,13 @@ test("game host serves stable by default, revalidates, and varies on Host", asyn
       (record) =>
         record.type === "hosted-sdk" &&
         record.projectId === project.id &&
-        record.generation === "stable" &&
         record.version === "1.0.0",
     ),
   );
 });
 
-test("canary projects get the candidate, others stay on stable, clearing the list rolls back", async (t) => {
+test("non-game hosts get no SDK", async (t) => {
   const hostedSdk = config();
-  const { get, project } = await hostedGame(t, hostedSdk);
-  const otherProject = crypto.randomUUID();
-
-  hostedSdk.canaryProjectIds = [project.id];
-  const canary = await get("/loki/sdk.js");
-  assert.equal(await canary.text(), candidateSource);
-  assert.equal(canary.headers.get("x-loki-sdk-generation"), "candidate");
-  const other = await get("/loki/sdk.js", otherProject);
-  assert.equal(await other.text(), stableSource);
-
-  hostedSdk.canaryProjectIds = [];
-  const rolledBack = await get("/loki/sdk.js");
-  assert.equal(await rolledBack.text(), stableSource);
-  assert.equal(rolledBack.headers.get("x-loki-sdk-generation"), "stable");
-
-  hostedSdk.serve = "candidate";
-  assert.equal(await (await get("/loki/sdk.js", otherProject)).text(), candidateSource);
-  hostedSdk.serve = "stable";
-  assert.equal(await (await get("/loki/sdk.js", otherProject)).text(), stableSource);
-});
-
-test("a missing candidate falls back to stable, and non-game hosts get no SDK", async (t) => {
-  const hostedSdk = config({ candidate: undefined, serve: "candidate" });
   const { get, origin, project } = await hostedGame(t, hostedSdk);
   assert.equal(await (await get("/loki/sdk.js")).text(), stableSource);
   const wrongHost = await fetch(`${origin}/loki/sdk.js`, {
@@ -264,12 +235,12 @@ test("a missing candidate falls back to stable, and non-game hosts get no SDK", 
 });
 
 test("the support script is served per game host with the selected version", async (t) => {
-  const { get } = await hostedGame(t, config({ serve: "candidate" }));
+  const { get } = await hostedGame(t, config());
   const response = await get("/loki/support.js");
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("cache-control"), "no-cache");
   const script = await response.text();
-  assert.match(script, /"version":"1\.1\.0"/);
+  assert.match(script, /"version":"1\.0\.0"/);
   assert.match(script, /\/v1\/runtime-reports/);
 });
 

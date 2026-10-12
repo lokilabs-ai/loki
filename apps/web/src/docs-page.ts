@@ -202,18 +202,22 @@ npm install @lokiplay/sdk@${v}`)}
           ${codeBlock(`npm install @lokiplay/ui-web@${v}`)}
           <p>Do not install <code>@loki/*</code>, unofficial packages named Loki, or <code>@heroiclabs/nakama-js</code>.</p>
           <h2>3. Add a room-entry flow</h2>
-          <p>Installing the SDK does not add a create/join screen. Before shipping, the game needs one of:</p>
+          <p>Installing the SDK does not add any screen. Run the flow through the lobby controller and build every screen yourself, in the game’s own theme:</p>
+          ${codeBlock(`const lobby = client.createLobby({
+  makeRoom: () => client.createSynchronizedRoom({ initialState, reduce }),
+  minPlayers: 2,
+  leaderboardId: "high-scores",
+});
+lobby.subscribe((state) => render(state)); // phase, room, publicRooms, leaderboard
+await lobby.createPrivate();               // or createPublic(), joinWithCode(code), joinPublic(roomId)`)}
+          <p>The controller draws nothing. It creates a fresh room for each match, awaits <code>leave()</code> before another entry, times out every creating, joining, and searching step, cancels a search, and decides when the roster is ready to start. Every game builds these screens:</p>
           <ul>
-            <li>A minimal lobby: create room, join with invite, copy invite, start when ready.</li>
-            <li>An automatic flow: a plain play URL creates a room; an invite or deep-link URL joins it.</li>
+            <li>Create room, join with an invite code, copy invite, and start when ready.</li>
+            <li>A Create private room control and a Create public room control, a public room list, and join from that list.</li>
+            <li>A Match control with searching, cancel, timeout, waiting, and error states.</li>
+            <li>A per-game Leaderboard with display-name collection or a sensible fallback, plus loading, empty, pagination, submission, and error states.</li>
           </ul>
-          <p>Players still need loading, waiting, and error states. The Loki overlay does not create or join rooms.</p>
-          <p>Loki’s SDK does not add a public lobby screen. If public-room discovery is enabled, the game agent must build the room browser and all loading, empty, joining, full-room, waiting, readiness, and error states. The Loki overlay does not list, create, or join public rooms. Do not make every room public.</p>
-          <p>Installing the SDK also does not add Match or Leaderboard screens. Both are required alongside create/join, and the Loki overlay never draws them:</p>
-          <ul>
-            <li>A Match control calling the room wrapper's <code>matchmake()</code> (<code>SynchronizedRoom.matchmake()</code> / <code>RealtimeRoom.matchmake()</code>) with confirmed player/team settings, plus searching, cancel, timeout, waiting, and error states.</li>
-            <li>A per-game Leaderboard using <code>listLeaderboard()</code>/<code>submitLeaderboardScore()</code> (or the in-room <code>submitScore()</code> for a mid-room board), with display-name collection or a sensible fallback, plus loading, empty, pagination, submission, and error states.</li>
-          </ul>
+          <p>Public rooms, Match, and the Leaderboard are required in every game. Loki’s SDK does not add a public lobby screen, and the Loki overlay does not create, list, or join rooms. Do not make every room public.</p>
           <p>Player count, teams, and scoring stay creator decisions; if the game has no numeric result to store, ask the creator once what to record instead of inventing a scoring rule. Leaderboards are per-game/project and available to guest sessions without a creator account — client-submitted scores are not an anti-cheat boundary.</p>
           <h2>4. Write <code>game.json</code></h2>
           ${codeBlock(`{
@@ -458,15 +462,15 @@ npx lokiplay@${v} <command>`)}
           <ul>
             <li>Create with <code>createRoom()</code> / <code>room.create()</code>. Create stays invite-only unless the game passes <code>{ visibility: "public" }</code>.</li>
             <li>Join with <code>joinRoom({ inviteCode })</code> / <code>room.join({ inviteCode })</code></li>
-            <li>Optional public browsing: <code>listPublicRooms()</code> then <code>joinPublic({ roomId })</code>. Confirm per mode; do not make every room public.</li>
+            <li>Public browsing: <code>listPublicRooms()</code> then <code>joinPublic({ roomId })</code>, or <code>refreshPublicRooms()</code> and <code>joinPublic(roomId)</code> on the lobby controller. Required in every game; do not make every room public.</li>
             <li>A 6-digit invite code issued by Loki (16-character hex codes from 0.2.0 still join)</li>
-            <li>Loading, waiting, reconnecting, and error UI, including a game-owned public lobby when discovery is enabled</li>
+            <li>Loading, waiting, reconnecting, and error UI, including a game-owned public lobby, drawn in the game’s own theme</li>
             <li><code>leave()</code> only from an explicit Leave / End Game control</li>
             <li>Before another match from the menu, <code>await leave()</code> to completion, then reset game-local match state when the room id changes</li>
             <li>A timeout, an error message, and a way back to the menu on every Creating, Joining, and Searching screen</li>
             <li>The match starts from the roster: begin once the minimum members are present and the local player has a seat, and show a count such as "1 / 2" with the invite code until then. Do not gate the start on <code>membership === "ready"</code> alone.</li>
             <li>For a synchronized room, a control that commits a match action calls <code>dispatch()</code> while connected, using the same snapshot check that enables the control. Draw the result from the snapshot that comes back. If the player cannot act, or <code>dispatch()</code> rejects, the control says so.</li>
-            <li>When entry is private invites plus public rooms, a Create private room control, a Create public room control, and a public room list</li>
+            <li>A Create private room control, a Create public room control, and a public room list in every game</li>
           </ul>
           <p>Fine-tuning after install means confirming those fields for <em>this</em> title, not copying a chess lobby onto a racer. Players see the result on the play link only after the next <code>ship</code>.</p>
           <h2>What Loki does not supply</h2>
@@ -601,7 +605,7 @@ const joined = await client.joinRoom({ inviteCode: "123456" });`)}
 await room.create({ visibility: "public", modeLabel: "casual" });
 await room.joinPublic({ roomId: rooms.rooms[0].roomId });`)}
           <p>A public summary includes only an opaque <code>roomId</code>, occupancy, whether the room is joinable, and an optional bounded <code>modeLabel</code>. Invite codes, player identities, and authoritative state are never listed. Private, unlisted, and matchmaking rooms never appear. Rooms are scoped to the caller’s project.</p>
-          <p>Loki’s SDK does not add a public lobby screen. If public-room discovery is enabled, the game agent must build the room browser and all loading, empty, joining, full-room, waiting, readiness, and error states. The Loki overlay does not list, create, or join public rooms. Do not make every room public. Confirm per mode whether entry is private invites, public browsing, automatic matchmaking, or a combination.</p>
+          <p>Loki’s SDK does not add a public lobby screen. Every game builds the room browser and all loading, empty, joining, full-room, waiting, readiness, and error states, alongside a Create private room control and a Create public room control. The Loki overlay does not list, create, or join public rooms. Do not make every room public.</p>
           <h2>Matchmaking</h2>
           ${codeBlock(`const room = await client.matchmake({
   minPlayers: 2,
@@ -672,6 +676,7 @@ await client.authenticate(token);`)}
               ["<code>listPublicRooms({ limit? })</code>", "List open public rooms"],
               ["<code>joinPublicRoom({ roomId })</code>", "Join a listed public room"],
               ["<code>matchmake({ minPlayers, maxPlayers, teamSize? })</code>", "Fill a room"],
+              ["<code>createLobby({ makeRoom, minPlayers, leaderboardId? })</code>", "UI-free lobby flow: create, join, public rooms, matchmaking, leaderboard"],
               ["<code>createSynchronizedRoom(options)</code>", "Lockstep room"],
               ["<code>createRealtimeRoom(options)</code>", "Streaming room"],
               ["<code>createHostedLokiClient(options)</code>", "Hosted play-page client"],
@@ -748,8 +753,8 @@ const client = await createHostedLokiClient({
             <li>Upload <code>game.json</code>, <code>index.html</code>, and static assets. No backends, secrets, ad tags, or localhost.</li>
             <li>Never override <code>projectId</code>, player identity, membership, or sequence.</li>
             <li><code>createRoom()</code> / <code>joinRoom({ inviteCode })</code>. No invented room keys.</li>
-            <li>Add a real create/join flow. The overlay is not that flow.</li>
-            <li>Loki’s SDK does not add a public lobby screen. If public-room discovery is enabled, the game agent must build the room browser and all loading, empty, joining, full-room, waiting, readiness, and error states. Do not make every room public.</li>
+            <li>Run the room flow through <code>client.createLobby()</code> and build every screen in the game’s own theme. The overlay is not that flow.</li>
+            <li>Loki’s SDK does not add a public lobby screen. Every game builds the room browser, a Create private room control and a Create public room control, a Match control, and a Leaderboard, with loading, empty, joining, full-room, waiting, readiness, and error states. Do not make every room public.</li>
             <li>Do not invent <code>game.json</code> fields.</li>
             <li>Synchronized vs realtime by state progression, not animation.</li>
             <li>Hosted games: <code>createHostedLokiClient({ projectId })</code> at boot.</li>

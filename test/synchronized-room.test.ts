@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   LokiClient,
+  createLobby,
   SynchronizedRoom,
   SynchronizedRoomError,
   SYNCHRONIZED_ROOM_COMMIT_TIMEOUT_MS,
@@ -1672,8 +1673,8 @@ test("MCP advertises synchronized rooms and flags manual synchronization", async
   };
   assert.equal(requirements.synchronizedRooms, true);
   assert.match(requirements.guidance, /Let Loki own lifecycle reconnect/);
-  assert.match(requirements.guidance, /usable room-entry flow/);
-  assert.match(requirements.guidance, /minimal lobby/);
+  assert.match(requirements.guidance, /client\.createLobby\(\{ makeRoom, minPlayers, leaderboardId \}\)/);
+  assert.match(requirements.guidance, /game's own theme/);
   assert.match(requirements.guidance, /does not add a public lobby screen/);
   assert.match(requirements.guidance, /do not make every room public/);
   assert.match(requirements.guidance, /do not infer player counts/);
@@ -2245,4 +2246,82 @@ test("public room browser capability mismatch fails clearly", async () => {
     unsupported.joinPublicRoom({ roomId: crypto.randomUUID() }),
     /public_room_browser/,
   );
+});
+
+test("the lobby controller drives real synchronized rooms end to end", async () => {
+  const projectId = crypto.randomUUID();
+  const hostClient = new LokiClient({ projectId, transport: new MemoryTransport() });
+  const guestClient = new LokiClient({ projectId, transport: new MemoryTransport() });
+  await hostClient.authenticate("token");
+  await guestClient.authenticate("token");
+  const hostLobby = hostClient.createLobby({
+    makeRoom: () => opaqueRoom(hostClient),
+    minPlayers: 2,
+    timeoutMs: 1_000,
+  });
+  const guestLobby = guestClient.createLobby({
+    makeRoom: () => opaqueRoom(guestClient),
+    minPlayers: 2,
+    timeoutMs: 1_000,
+  });
+
+  await hostLobby.createPublic({ modeLabel: "casual" });
+  assert.equal(hostLobby.getState().phase, "waiting");
+  assert.match(hostLobby.getState().room?.inviteCode ?? "", /^[0-9]{6}$/);
+
+  await guestLobby.refreshPublicRooms();
+  const listed = guestLobby.getState().publicRooms;
+  assert.equal(listed.status, "ready");
+  assert.equal(listed.rooms.length, 1);
+  assert.equal(listed.rooms[0]?.modeLabel, "casual");
+
+  await guestLobby.joinPublic(listed.rooms[0]!.roomId);
+  assert.equal(guestLobby.getState().phase, "ready");
+  assert.equal(guestLobby.getState().room?.playerCount, 2);
+  assert.equal(hostLobby.getState().phase, "ready", "the host sees the guest arrive");
+
+  const hostRoom = hostLobby.getRoom()!;
+  await hostRoom.dispatch({ d: 4 });
+  assert.deepEqual(guestLobby.getRoom()!.getSnapshot().state, { n: 4 });
+
+  // Leaving waits for the old room, and the next match is a fresh room object.
+  const firstGuestRoom = guestLobby.getRoom();
+  await guestLobby.leave();
+  assert.equal(guestLobby.getState().phase, "menu");
+  assert.equal(guestLobby.getRoom(), undefined);
+  assert.equal(firstGuestRoom?.getSnapshot().connection, "closed");
+  assert.equal(hostLobby.getState().room?.playerCount, 1);
+  assert.equal(hostLobby.getState().phase, "waiting");
+
+  await guestLobby.joinWithCode(hostLobby.getState().room!.inviteCode);
+  assert.equal(guestLobby.getState().phase, "ready");
+  assert.notEqual(guestLobby.getRoom(), firstGuestRoom);
+
+  // Joining another room first leaves the current one.
+  const thirdClient = new LokiClient({ projectId, transport: new MemoryTransport() });
+  await thirdClient.authenticate("token");
+  const thirdLobby = thirdClient.createLobby({
+    makeRoom: () => opaqueRoom(thirdClient),
+    minPlayers: 2,
+    timeoutMs: 1_000,
+  });
+  await thirdLobby.joinWithCode("000000");
+  assert.equal(thirdLobby.getState().phase, "error");
+  assert.match(thirdLobby.getState().error ?? "", /ROOM_NOT_FOUND|not found/i);
+  assert.equal(thirdLobby.getRoom(), undefined);
+
+  // The leaderboard reports a transport that has none, instead of throwing at the UI.
+  const boardLobby = guestClient.createLobby({
+    makeRoom: () => opaqueRoom(guestClient),
+    minPlayers: 2,
+    leaderboardId: "high-scores",
+  });
+  await boardLobby.loadLeaderboard();
+  assert.equal(boardLobby.getState().leaderboard.status, "error");
+  assert.match(boardLobby.getState().leaderboard.error ?? "", /unsupported/);
+
+  hostLobby.dispose();
+  guestLobby.dispose();
+  thirdLobby.dispose();
+  boardLobby.dispose();
 });

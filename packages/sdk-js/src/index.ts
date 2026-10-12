@@ -60,6 +60,20 @@ import {
 import { RealtimeRoom, type RealtimeRoomOptions } from "./realtime-room.js";
 import { createEntityCompositor, createLocalPrediction } from "./realtime-entities.js";
 import { calibrateRealtimeRoom } from "./realtime-calibration.js";
+import { createLobby, type Lobby, type LobbyOptions, type LobbyRoom } from "./lobby.js";
+
+export { createLobby, LobbyError } from "./lobby.js";
+export type {
+  Lobby,
+  LobbyClient,
+  LobbyListStatus,
+  LobbyOptions,
+  LobbyPhase,
+  LobbyRoom,
+  LobbyRoomSnapshot,
+  LobbyRoomView,
+  LobbyState,
+} from "./lobby.js";
 
 export {
   SYNCHRONIZED_ROOM_ACTION_TTL_MS,
@@ -486,6 +500,17 @@ export class LokiClient {
       },
       options,
     );
+  }
+
+  /**
+   * A UI-free lobby flow: create, join, public rooms, matchmaking, leaving, and
+   * the per-game leaderboard. Pass `makeRoom` so each match gets a fresh room
+   * (`() => client.createSynchronizedRoom(...)` or `createRealtimeRoom(...)`).
+   * The game renders `lobby.getState()` in its own theme.
+   */
+  createLobby<Room extends LobbyRoom>(options: Omit<LobbyOptions<Room>, "client">): Lobby<Room> {
+    if (!this.#unsubscribe) this.initialize();
+    return createLobby({ ...options, client: this });
   }
 
   onConnection(listener: (event: ConnectionEvent) => void): () => void {

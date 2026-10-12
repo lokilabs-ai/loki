@@ -540,7 +540,7 @@ test("Theme 03 product surfaces render functional, safely configured shells", ()
   );
   assert.doesNotMatch(promptSource, /ship --project/);
   for (const rule of [
-    /usable room-entry flow/,
+    /createLobby/,
     /does not add a public lobby screen/,
     /Do not infer multiplayer requirements/,
     /Do not invent new game\.json fields/,
@@ -1043,8 +1043,10 @@ test("CLI initializes, validates and archives finished builds", async () => {
     assert.match(agents, /Google Fonts/);
     assert.match(agents, /<form>/);
     assert.match(agents, /Let the SDK own browser lifecycle detection/);
-    assert.match(agents, /usable room-entry flow/);
-    assert.match(agents, /minimal lobby/);
+    assert.match(agents, /client\.createLobby\(\{ makeRoom, minPlayers, leaderboardId \}\)/);
+    assert.match(agents, /game's own\s+theme/);
+    assert.match(agents, /Create private room control/);
+    assert.match(agents, /Create public room\s+control/);
     assert.match(agents, /does not add a public lobby screen/);
     assert.match(agents, /Do not make every room\s+public/);
     assert.match(agents, /listPublicRooms/);

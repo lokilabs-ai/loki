@@ -34,6 +34,13 @@ const describeError = async (error: unknown): Promise<string> => {
     return `HTTP ${error.status} ${error.statusText}${body ? `: ${body.slice(0, 500)}` : ""}`;
   }
   if (error instanceof Error) return error.message;
+  if (error && typeof error === "object") {
+    try {
+      return JSON.stringify(error).slice(0, 500);
+    } catch {
+      return String(error);
+    }
+  }
   return String(error);
 };
 const toError = async (error: unknown): Promise<Error> =>
@@ -167,7 +174,13 @@ async function waitReady(deadline: number): Promise<void> {
 function attachHostListener(room: Room): void {
   room.host.socket.onmatchdata = (message) => {
     if (message.match_id !== room.matchId) return;
-    let data: { type?: string; version?: number; code?: string; message?: string };
+    let data: {
+      type?: string;
+      version?: number;
+      stateVersion?: number;
+      code?: string;
+      message?: string;
+    };
     try {
       const raw = message.data;
       data = JSON.parse(
@@ -182,7 +195,11 @@ function attachHostListener(room: Room): void {
         resolve({
           ok: true,
           version:
-            typeof data.version === "number" ? data.version : room.version + 1,
+            typeof data.stateVersion === "number"
+              ? data.stateVersion
+              : typeof data.version === "number"
+                ? data.version
+                : room.version + 1,
         }),
       );
       return;

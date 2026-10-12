@@ -2,11 +2,11 @@
 // @lokiplay/protocol, and @heroiclabs/nakama-js.
 //
 //   node scripts/build-hosted-sdk.mjs
-//     writes apps/web/hosted-sdk/candidate.js, and stable.js only when it
-//     does not exist yet (stable changes only when a candidate is accepted).
+//     writes apps/web/hosted-sdk/stable.js, the file every game host serves.
+//     The web image runs this on every deploy, so a deploy is a release.
 //   node scripts/build-hosted-sdk.mjs --out <file>
 //     writes just that file (used by the CLI build for `lokiplay preview`).
-import { mkdir, readFile, writeFile, access } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
@@ -72,15 +72,6 @@ export async function buildHostedSdk() {
   return { bytes, version, gzipBytes };
 }
 
-async function exists(file) {
-  try {
-    await access(file);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function main(argv) {
   const outIndex = argv.indexOf("--out");
   const built = await buildHostedSdk();
@@ -94,9 +85,7 @@ async function main(argv) {
   }
   const directory = path.join(root, "apps/web/hosted-sdk");
   await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, "candidate.js"), built.bytes);
-  const stable = path.join(directory, "stable.js");
-  if (!(await exists(stable))) await writeFile(stable, built.bytes);
+  await writeFile(path.join(directory, "stable.js"), built.bytes);
   console.log(`hosted SDK ${built.version}: ${built.bytes.length} bytes, ${built.gzipBytes} gzipped`);
 }
 

@@ -25,9 +25,6 @@ const environment = z
     LOKI_PRIVACY_VERSION: z.string().min(1),
     LOKI_AUP_VERSION: z.string().min(1),
     LOKI_PLAYER_ORIGIN: z.string().url().default("https://play.lokiplay.cc"),
-    // Hosted SDK rollout: unset both for stable everywhere (the rollback state).
-    LOKI_HOSTED_SDK_SERVE: z.enum(["stable", "candidate"]).optional(),
-    LOKI_HOSTED_SDK_CANARY_PROJECT_IDS: z.string().optional(),
   })
   .parse(process.env);
 
@@ -39,10 +36,7 @@ const pool = new Pool({
 });
 await pool.query("SELECT 1");
 
-const hostedSdk = await loadHostedSdkConfig({
-  serve: environment.LOKI_HOSTED_SDK_SERVE,
-  canaryProjectIds: environment.LOKI_HOSTED_SDK_CANARY_PROJECT_IDS,
-});
+const hostedSdk = await loadHostedSdkConfig();
 
 const platform = new PostgresPlatformService(pool, new SessionTokenService());
 const deployments = new PostgresDeploymentRepository(pool);

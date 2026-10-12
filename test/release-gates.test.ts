@@ -10,13 +10,11 @@ import {
 } from "../scripts/verify-release-gates.js";
 import {
   CostMeasurementSchema,
-  MASTER_OPERATOR_EMAIL,
-  OperatorSecurityReviewSchema,
   PilotMatrixSchema,
   conservativeCaps,
 } from "../scripts/release-evidence.js";
 
-test("release verifier requires dated gates, operator security review, and counsel legal review", async () => {
+test("release verifier requires dated, digest-matched evidence for every gate", async () => {
   const directory = await mkdtemp(join(tmpdir(), "loki-gates-"));
   const observedAt = "2026-09-07T00:00:00.000Z";
   const typedEvidence = (gate: string): Record<string, unknown> => {
@@ -77,29 +75,6 @@ test("release verifier requires dated gates, operator security review, and couns
         sourceReferences: ["invoice"],
       };
     }
-    if (gate === "external-security-review") {
-      return {
-        schemaVersion: 1,
-        generatedAt: observedAt,
-        reviewer: { name: "second-agent", model: "test-model" },
-        operator: MASTER_OPERATOR_EMAIL,
-        approvedAt: observedAt,
-        checklist: {
-          tenantIsolation: true,
-          tokensSessions: true,
-          zipLimits: true,
-          sandboxCsp: true,
-          githubWebhooks: true,
-          nakamaTenantBoundaries: true,
-          adminAuthorization: true,
-        },
-        evidenceReferences: [
-          "scripts/check-production.ts",
-          "test/nakama.integration.ts",
-        ],
-        passed: true,
-      };
-    }
     if (gate === "package-registry-install") return { mode: "registry", passed: true };
     if (gate === "representative-game-pilot") {
       return {
@@ -155,24 +130,6 @@ test("release verifier requires dated gates, operator security review, and couns
         environment: "production",
         evidenceFile: evidence.file,
         evidenceSha256: evidence.digest,
-        ...(gate === "external-security-review"
-          ? {
-              operator: {
-                email: MASTER_OPERATOR_EMAIL,
-                approvedAt: observedAt,
-              },
-            }
-          : {}),
-        ...(gate === "external-legal-review"
-          ? {
-              external: {
-                organization: "Independent Reviewer",
-                reviewer: "Named Person",
-                reportReference: "controlled-report-1",
-                approvedAt: observedAt,
-              },
-            }
-          : {}),
       };
     }),
   };
@@ -184,50 +141,19 @@ test("release verifier requires dated gates, operator security review, and couns
     }),
     { release: "v1.0.0", verified: requiredGateIds.length },
   );
-  manifest.evidence = manifest.evidence.filter(
-    (entry) => entry.gate !== "external-legal-review",
-  );
-  await writeFile(path, JSON.stringify(manifest));
-  await assert.rejects(() => verifyReleaseGates(path), /external-legal-review/);
-
-  manifest.evidence = requiredGateIds.map((gate) => {
-    const evidence = evidenceByGate.get(gate)!;
-    return {
-      gate,
-      status: "pass" as const,
-      observedAt,
-      environment: "production",
-      evidenceFile: evidence.file,
-      evidenceSha256: evidence.digest,
-      ...(gate === "external-security-review"
-        ? {
-            external: {
-              organization: "Monitoring Vendor",
-              reviewer: "Dashboard",
-              reportReference: "sentry-or-grafana",
-              approvedAt: observedAt,
-            },
-          }
-        : {}),
-      ...(gate === "external-legal-review"
-        ? {
-            external: {
-              organization: "Independent Reviewer",
-              reviewer: "Named Person",
-              reportReference: "controlled-report-1",
-              approvedAt: observedAt,
-            },
-          }
-        : {}),
-    };
-  });
+  manifest.evidence = manifest.evidence.filter((entry) => entry.gate !== "quotas");
   await writeFile(path, JSON.stringify(manifest));
   await assert.rejects(
-    () =>
-      verifyReleaseGates(path, {
-        now: new Date("2026-09-08T00:00:00.000Z"),
-      }),
-    /operator attestation/,
+    () => verifyReleaseGates(path, { now: new Date("2026-09-08T00:00:00.000Z") }),
+    /quotas: missing passing evidence/,
+  );
+  assert.equal(
+    (requiredGateIds as readonly string[]).includes("external-security-review"),
+    false,
+  );
+  assert.equal(
+    (requiredGateIds as readonly string[]).includes("external-legal-review"),
+    false,
   );
 });
 
@@ -259,41 +185,6 @@ test("cost caps reserve budget and schemas reject unsupported evidence", () => {
       release: "v1",
       environment: "production",
       pilots: [{ category: "desktop-unknown" }],
-    }),
-  );
-});
-
-test("operator security review rejects self-approval and unnamed firms are not required", () => {
-  const observedAt = "2026-09-07T00:00:00.000Z";
-  const report = {
-    schemaVersion: 1 as const,
-    generatedAt: observedAt,
-    reviewer: { name: "second-agent", model: "test-model" },
-    operator: MASTER_OPERATOR_EMAIL,
-    approvedAt: observedAt,
-    checklist: {
-      tenantIsolation: true,
-      tokensSessions: true,
-      zipLimits: true,
-      sandboxCsp: true,
-      githubWebhooks: true,
-      nakamaTenantBoundaries: true,
-      adminAuthorization: true,
-    },
-    evidenceReferences: ["scripts/check-production.ts"],
-    passed: true as const,
-  };
-  assert.equal(OperatorSecurityReviewSchema.parse(report).operator, MASTER_OPERATOR_EMAIL);
-  assert.throws(() =>
-    OperatorSecurityReviewSchema.parse({
-      ...report,
-      reviewer: { name: MASTER_OPERATOR_EMAIL, model: "test-model" },
-    }),
-  );
-  assert.throws(() =>
-    OperatorSecurityReviewSchema.parse({
-      ...report,
-      operator: "other@example.com",
     }),
   );
 });

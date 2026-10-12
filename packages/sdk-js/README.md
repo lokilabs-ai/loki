@@ -29,30 +29,45 @@ host state, snapshots, presence, chat, private scores, token refresh, reconnect,
 and host-migration messages. Loki creates every room and issues the shareable
 invite code. New rooms issue a 6-digit code. `0.2.0` 16-character hex codes
 still join. Call `createRoom()` and `joinRoom({ inviteCode })` and do not invent
-room keys. `create()` stays invite-only unless the game passes
-`{ visibility: "public" }`. Public rooms can be listed with
-`listPublicRooms()` and joined with `joinPublic({ roomId })` when the runtime
-advertises `public_room_browser`. A public summary includes only an opaque
-`roomId`, occupancy, joinable, and an optional bounded `modeLabel`. The SDK
-does not add a public lobby screen; the game must build the browser and all
-loading, empty, joining, full-room, waiting, readiness, and error states.
-The Loki overlay does not list, create, or join public rooms. Do not make
-every room public.
+room keys. `create()` stays invite-only unless the game passes `{ visibility: "public" }`.
+Public rooms can be listed with `listPublicRooms()` and joined with
+`joinPublic({ roomId })` when the runtime advertises `public_room_browser`. A
+public summary includes only an opaque `roomId`, occupancy, joinable, and an
+optional bounded `modeLabel`. Do not make every room public.
 
-Installing the SDK does not add Match or Leaderboard UI either; both are
-required alongside create/join, and the Loki overlay never draws them. Add
-a Match control calling the room wrapper's `matchmake()`
-(`SynchronizedRoom.matchmake()` / `RealtimeRoom.matchmake()`) with
-searching, cancel (abort the in-flight search), timeout, waiting, and error
-states, and a per-game Leaderboard using `LokiClient.listLeaderboard()` /
-`LokiClient.submitLeaderboardScore()` (room-independent; usable before,
-during, or without joining a room) — or the in-room `submitScore()` for a
-mid-room board — with display-name collection or a sensible fallback plus
-loading, empty, pagination, submission, and error states. Player count,
-teams, and scoring stay creator decisions; if the game has no numeric
-result to store, ask the creator once what to record. Leaderboards are
-per-game/project and available to guest sessions without a creator
-account; client-submitted scores are not an anti-cheat boundary.
+Run the room flow through the lobby controller. It is UI-free; the game renders
+its state in its own theme:
+
+```ts
+const lobby = client.createLobby({
+  makeRoom: () => client.createSynchronizedRoom({ initialState, reduce }),
+  minPlayers: 2,
+  leaderboardId: "high-scores",
+});
+lobby.subscribe((state) => render(state)); // phase, room, publicRooms, leaderboard
+await lobby.createPrivate(); // createPublic(), joinWithCode(code), joinPublic(roomId)
+```
+
+The controller creates a fresh room for each match, awaits `leave()` before
+another entry, times out every creating, joining, and searching step, supports
+`cancelSearch()`, and reports `ready` from the roster. It also loads the public
+room list (`refreshPublicRooms()`) and the per-game leaderboard
+(`loadLeaderboard()`, `loadMoreLeaderboard()`, `submitScore()`). Use
+`lobby.getRoom()` for `dispatch()` and the realtime calls.
+
+Installing the SDK does not add any screen, and the Loki overlay never draws
+one. Every game builds: create room, join with an invite code, copy invite, and
+start when ready; a Create private room control and a Create public room
+control with a public room list; a Match control with searching, cancel,
+timeout, waiting, and error states; and a per-game Leaderboard with
+display-name collection or a sensible fallback plus loading, empty,
+pagination, submission, and error states. Public rooms, Match, and the
+Leaderboard are required in every game. Player count, teams, and scoring stay
+creator decisions; if the game has no numeric result to store, ask the creator
+once what to record. Leaderboards are per-game/project and available to guest
+sessions without a creator account; client-submitted scores are not an
+anti-cheat boundary. The Loki overlay does not list, create, or join public
+rooms.
 Matchmaking is blind, per-project, and single-region; a server-owned
 region is stamped on every ticket and any client-sent region is ignored.
 

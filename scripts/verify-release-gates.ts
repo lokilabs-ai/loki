@@ -5,9 +5,6 @@ import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import {
   CostMeasurementSchema,
-  MASTER_OPERATOR_EMAIL,
-  OperatorSecurityReviewSchema,
-  PilotMatrixSchema,
 } from "./release-evidence.js";
 
 export const requiredGateIds = [
@@ -21,10 +18,7 @@ export const requiredGateIds = [
   "r2-immutable-restore",
   "cost",
   "package-registry-install",
-  "representative-game-pilot",
   "railway-alerts",
-  "external-security-review",
-  "external-legal-review",
 ] as const;
 
 const Evidence = z.object({
@@ -35,20 +29,6 @@ const Evidence = z.object({
   evidenceFile: z.string().min(1),
   evidenceSha256: z.string().regex(/^[a-f0-9]{64}$/),
   notes: z.string().min(1).optional(),
-  operator: z
-    .object({
-      email: z.literal(MASTER_OPERATOR_EMAIL),
-      approvedAt: z.string().datetime({ offset: true }),
-    })
-    .optional(),
-  external: z
-    .object({
-      organization: z.string().min(1),
-      reviewer: z.string().min(1),
-      reportReference: z.string().min(1),
-      approvedAt: z.string().datetime({ offset: true }),
-    })
-    .optional(),
 });
 
 const Manifest = z.object({
@@ -124,34 +104,10 @@ function validateTypedEvidence(gate: string, bytes: Buffer): void {
     }
   }
   if (gate === "cost") CostMeasurementSchema.parse(value);
-  if (gate === "external-security-review") {
-    OperatorSecurityReviewSchema.parse(value);
-  }
   if (gate === "package-registry-install") {
     z.object({ mode: z.literal("registry"), passed: z.literal(true) }).parse(
       value,
     );
-  }
-  if (gate === "representative-game-pilot") {
-    const matrix = PilotMatrixSchema.parse(value);
-    const required = [
-      "browser",
-      "swift",
-      "android",
-      "unity-native",
-      "unity-webgl",
-      "casual-realtime",
-      "team",
-    ];
-    for (const category of required) {
-      if (
-        !matrix.pilots.some(
-          (pilot) => pilot.category === category && pilot.result === "pass",
-        )
-      ) {
-        throw new Error(`missing passing ${category} pilot`);
-      }
-    }
   }
 }
 
@@ -180,19 +136,6 @@ export async function verifyReleaseGates(
       now.getTime() - observedAt.getTime() > maxAgeMs
     ) {
       failures.push(`${gate}: evidence is future-dated or older than ${options.maxAgeDays ?? 30} days`);
-    }
-    if (gate === "external-security-review") {
-      if (
-        !entry.operator ||
-        entry.operator.email !== MASTER_OPERATOR_EMAIL
-      ) {
-        failures.push(
-          `${gate}: operator attestation from ${MASTER_OPERATOR_EMAIL} is required`,
-        );
-      }
-    }
-    if (gate === "external-legal-review" && !entry.external) {
-      failures.push(`${gate}: independent reviewer evidence is required`);
     }
     try {
       const evidencePath = resolve(

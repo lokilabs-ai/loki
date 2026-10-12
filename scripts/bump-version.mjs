@@ -45,7 +45,7 @@ for (const file of files) {
 }
 
 // The built SDK embeds its version in the header and in LOKI_SDK_VERSION, so
-// rebuild it instead of editing text. The build keeps stable.js if it exists.
+// rebuild stable.js instead of editing the bundle text.
 const stable = "apps/web/hosted-sdk/stable.js";
 if (!existsSync(stable)) throw new Error(`${stable} is missing`);
 unlinkSync(stable);

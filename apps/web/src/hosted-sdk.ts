@@ -12,15 +12,7 @@ export interface HostedSdkBundle {
 
 export interface HostedSdkConfig {
   stable: HostedSdkBundle;
-  /** Absent when no candidate build exists; everyone then gets stable. */
-  candidate?: HostedSdkBundle;
-  /** "candidate" serves the candidate to every project. Anything else serves stable. */
-  serve?: "stable" | "candidate";
-  /** Projects that get the candidate while everyone else keeps stable. */
-  canaryProjectIds?: readonly string[];
 }
-
-export type HostedSdkGeneration = "stable" | "candidate";
 
 export function hostedSdkBundleFromSource(source: Buffer | string): HostedSdkBundle {
   const buffer = Buffer.isBuffer(source) ? source : Buffer.from(source, "utf8");
@@ -38,36 +30,10 @@ async function readBundle(file: URL): Promise<HostedSdkBundle | undefined> {
   }
 }
 
-export async function loadHostedSdkConfig(input: {
-  serve?: string;
-  canaryProjectIds?: string;
-}): Promise<HostedSdkConfig> {
+export async function loadHostedSdkConfig(): Promise<HostedSdkConfig> {
   const stable = await readBundle(new URL("../hosted-sdk/stable.js", import.meta.url));
   if (!stable) throw new Error("hosted-sdk/stable.js is missing");
-  const candidate = await readBundle(new URL("../hosted-sdk/candidate.js", import.meta.url));
-  return {
-    stable,
-    ...(candidate ? { candidate } : {}),
-    serve: input.serve === "candidate" ? "candidate" : "stable",
-    canaryProjectIds: (input.canaryProjectIds ?? "")
-      .split(",")
-      .map((value) => value.trim().toLowerCase())
-      .filter(Boolean),
-  };
-}
-
-export function selectHostedSdk(
-  config: HostedSdkConfig,
-  projectId: string,
-): { bundle: HostedSdkBundle; generation: HostedSdkGeneration } {
-  if (
-    config.candidate &&
-    (config.serve === "candidate" ||
-      config.canaryProjectIds?.includes(projectId.toLowerCase()))
-  ) {
-    return { bundle: config.candidate, generation: "candidate" };
-  }
-  return { bundle: config.stable, generation: "stable" };
+  return { stable };
 }
 
 export function contentEtag(body: Buffer): string {

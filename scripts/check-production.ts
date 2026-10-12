@@ -12,7 +12,7 @@ const environment = z
     WEB_ORIGIN: z.string().url(),
     SUPABASE_URL: z.string().url(),
     SUPABASE_ANON_KEY: z.string().min(16),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(16),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(16).optional(),
     SUPABASE_DATABASE_URL: z.string().min(16),
     LOKI_R2_ACCOUNT_ID: z.string().regex(/^[a-f0-9]{32}$/i),
     LOKI_R2_BUCKET: z.string().min(3),
@@ -22,6 +22,7 @@ const environment = z
     LOKI_TERMS_VERSION: z.string().min(1),
     LOKI_PRIVACY_VERSION: z.string().min(1),
     LOKI_AUP_VERSION: z.string().min(1),
+    LOKI_EDGE_SECRET: z.string().min(1).optional(),
   })
   .parse(process.env);
 
@@ -38,10 +39,10 @@ const requestJson = async <T>(
 };
 
 const id = randomUUID();
-const email = `production-check-${id}@example.test`;
+const email = `sanborn.li.hk+loki-check-${id.slice(0, 8)}@gmail.com`;
 const password = `Loki-${randomBytes(24).toString("base64url")}!`;
 const slug = `check-${id.slice(0, 8)}`;
-const outsiderEmail = `production-check-outsider-${id}@example.test`;
+const outsiderEmail = `sanborn.li.hk+loki-outsider-${id.slice(0, 8)}@gmail.com`;
 const outsiderPassword = `Loki-${randomBytes(24).toString("base64url")}!`;
 const pool = new Pool({ connectionString: environment.SUPABASE_DATABASE_URL });
 const artifacts = new R2ArtifactStore({
@@ -51,6 +52,113 @@ const artifacts = new R2ArtifactStore({
   secretAccessKey: environment.LOKI_R2_SECRET_ACCESS_KEY,
 });
 
+const insertConfirmedUser = async (
+  userEmail: string,
+  userPassword: string,
+): Promise<string> => {
+  const userId = randomUUID();
+  const inserted = await pool.query<{ id: string }>(
+    `INSERT INTO auth.users (
+       instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+       raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+       confirmation_token, recovery_token, email_change_token_new, email_change,
+       email_change_token_current, reauthentication_token, phone_change_token,
+       is_sso_user, is_anonymous, email_change_confirm_status
+     )
+     SELECT instance_id, $1::uuid, 'authenticated', 'authenticated', $2,
+       extensions.crypt($3, extensions.gen_salt('bf')), now(),
+       '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb,
+       now(), now(), $4, $4, $4, '', $4, $4, $4,
+       false, false, 0
+     FROM auth.users
+     LIMIT 1
+     RETURNING id`,
+    [userId, userEmail, userPassword, randomBytes(16).toString("hex")],
+  );
+  const id = inserted.rows[0]?.id;
+  if (!id) throw new Error("direct user insert did not return an id");
+  await pool.query(
+    `INSERT INTO auth.identities (
+       id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at
+     ) VALUES (
+       $1::uuid, $2::text, $3::uuid,
+       jsonb_build_object('sub', $3::text, 'email', $4::text, 'email_verified', true),
+       'email', now(), now(), now()
+     )`,
+    [randomUUID(), id, id, userEmail],
+  );
+  return id;
+};
+
+const createConfirmedUser = async (
+  userEmail: string,
+  userPassword: string,
+): Promise<string> => {
+  if (environment.SUPABASE_SERVICE_ROLE_KEY) {
+    const user = await requestJson<{ id: string }>(
+      `${environment.SUPABASE_URL}/auth/v1/admin/users`,
+      {
+        method: "POST",
+        headers: {
+          apikey: environment.SUPABASE_SERVICE_ROLE_KEY,
+          authorization: `Bearer ${environment.SUPABASE_SERVICE_ROLE_KEY}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          password: userPassword,
+          email_confirm: true,
+        }),
+      },
+    );
+    return user.id;
+  }
+  const response = await fetch(`${environment.SUPABASE_URL}/auth/v1/signup`, {
+    method: "POST",
+    headers: {
+      apikey: environment.SUPABASE_ANON_KEY,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ email: userEmail, password: userPassword }),
+  });
+  const body = await response.text();
+  if (response.status === 429) {
+    return insertConfirmedUser(userEmail, userPassword);
+  }
+  if (!response.ok) {
+    throw new Error(`signup failed (${response.status}): ${body.slice(0, 300)}`);
+  }
+  const created = JSON.parse(body) as { user?: { id?: string } };
+  await pool.query(
+    "UPDATE auth.users SET email_confirmed_at = now() WHERE email = $1 AND email_confirmed_at IS NULL",
+    [userEmail],
+  );
+  const found = await pool.query<{ id: string }>(
+    "SELECT id FROM auth.users WHERE email = $1",
+    [userEmail],
+  );
+  const userId = created.user?.id ?? found.rows[0]?.id;
+  if (!userId) throw new Error("signup did not return a user id");
+  return userId;
+};
+
+const deleteAuthUser = async (userId: string, userEmail: string): Promise<void> => {
+  if (environment.SUPABASE_SERVICE_ROLE_KEY) {
+    await fetch(`${environment.SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+      method: "DELETE",
+      headers: {
+        apikey: environment.SUPABASE_SERVICE_ROLE_KEY,
+        authorization: `Bearer ${environment.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+    });
+    return;
+  }
+  await pool.query("DELETE FROM auth.users WHERE id = $1 OR email = $2", [
+    userId,
+    userEmail,
+  ]);
+};
+
 let authUserId: string | undefined;
 let outsiderAuthUserId: string | undefined;
 let accountId: string | undefined;
@@ -59,36 +167,8 @@ let organizationId: string | undefined;
 let deploymentId: string | undefined;
 
 try {
-  const user = await requestJson<{ id: string }>(
-    `${environment.SUPABASE_URL}/auth/v1/admin/users`,
-    {
-      method: "POST",
-      headers: {
-        apikey: environment.SUPABASE_SERVICE_ROLE_KEY,
-        authorization: `Bearer ${environment.SUPABASE_SERVICE_ROLE_KEY}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ email, password, email_confirm: true }),
-    },
-  );
-  authUserId = user.id;
-  const outsider = await requestJson<{ id: string }>(
-    `${environment.SUPABASE_URL}/auth/v1/admin/users`,
-    {
-      method: "POST",
-      headers: {
-        apikey: environment.SUPABASE_SERVICE_ROLE_KEY,
-        authorization: `Bearer ${environment.SUPABASE_SERVICE_ROLE_KEY}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        email: outsiderEmail,
-        password: outsiderPassword,
-        email_confirm: true,
-      }),
-    },
-  );
-  outsiderAuthUserId = outsider.id;
+  authUserId = await createConfirmedUser(email, password);
+  outsiderAuthUserId = await createConfirmedUser(outsiderEmail, outsiderPassword);
 
   const session = await requestJson<{ access_token: string }>(
     `${environment.SUPABASE_URL}/auth/v1/token?grant_type=password`,
@@ -110,6 +190,12 @@ try {
     authorization: `Bearer ${session.access_token}`,
     "content-type": "application/json",
     ...legalHeaders,
+    ...(environment.LOKI_EDGE_SECRET
+      ? {
+          "x-loki-edge-secret": environment.LOKI_EDGE_SECRET,
+          "cf-connecting-ip": "203.0.113.10",
+        }
+      : {}),
   };
   const outsiderSession = await requestJson<{ access_token: string }>(
     `${environment.SUPABASE_URL}/auth/v1/token?grant_type=password`,
@@ -188,7 +274,7 @@ try {
         multiplayer: {
           enabled: true,
           authority: "host",
-          maxPlayers: 8,
+          maxPlayers: 4,
           tickRate: 10,
         },
         networkAllowlist: [],
@@ -352,7 +438,7 @@ try {
     `${environment.API_ORIGIN}/v1/player-sessions`,
     {
       method: "POST",
-      headers: creatorHeaders,
+      headers: { ...creatorHeaders, "x-loki-play-invite": invite.token },
       body: JSON.stringify({ projectId: project.id, guest: true }),
     },
   );
@@ -501,6 +587,9 @@ try {
   console.log(
     "Production hosting, isolation, private denial, quotas, kill switch, and Nakama exchange succeeded.",
   );
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  throw error;
 } finally {
   if (deploymentId) {
     await artifacts.delete(deploymentId).catch(() => undefined);
@@ -528,26 +617,7 @@ try {
   if (outsiderAccountId) {
     await pool.query("DELETE FROM accounts WHERE id = $1", [outsiderAccountId]);
   }
+  if (authUserId) await deleteAuthUser(authUserId, email);
+  if (outsiderAuthUserId) await deleteAuthUser(outsiderAuthUserId, outsiderEmail);
   await pool.end();
-  if (authUserId) {
-    await fetch(`${environment.SUPABASE_URL}/auth/v1/admin/users/${authUserId}`, {
-      method: "DELETE",
-      headers: {
-        apikey: environment.SUPABASE_SERVICE_ROLE_KEY,
-        authorization: `Bearer ${environment.SUPABASE_SERVICE_ROLE_KEY}`,
-      },
-    });
-  }
-  if (outsiderAuthUserId) {
-    await fetch(
-      `${environment.SUPABASE_URL}/auth/v1/admin/users/${outsiderAuthUserId}`,
-      {
-        method: "DELETE",
-        headers: {
-          apikey: environment.SUPABASE_SERVICE_ROLE_KEY,
-          authorization: `Bearer ${environment.SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-      },
-    );
-  }
 }

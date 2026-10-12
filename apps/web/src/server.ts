@@ -38,7 +38,6 @@ import {
 } from "../../../packages/protocol/src/index.js";
 import {
   contentEtag,
-  selectHostedSdk,
   withImportMapCsp,
   type HostedSdkConfig,
 } from "./hosted-sdk.js";
@@ -463,7 +462,7 @@ export function createWebHandler(dependencies: WebDependencies) {
           fail(response, 404, "not found");
           return;
         }
-        const { bundle, generation } = selectHostedSdk(dependencies.hostedSdk, projectId);
+        const bundle = dependencies.hostedSdk.stable;
         const body =
           url.pathname === HOSTED_SDK_PATH
             ? bundle.source
@@ -481,7 +480,6 @@ export function createWebHandler(dependencies: WebDependencies) {
           type: "hosted-sdk",
           projectId,
           path: url.pathname,
-          generation,
           version: bundle.version,
           status: notModified ? 304 : 200,
         });
@@ -490,7 +488,6 @@ export function createWebHandler(dependencies: WebDependencies) {
           vary: "Host",
           etag,
           "x-loki-sdk-version": bundle.version,
-          "x-loki-sdk-generation": generation,
           "x-content-type-options": "nosniff",
         };
         if (notModified) {

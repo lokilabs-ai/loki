@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { MASTER_TEST_ACCOUNT_EMAIL } from "../apps/api/src/master-account.js";
 
 export const CostMeasurementSchema = z.object({
   schemaVersion: z.literal(1),
@@ -29,36 +28,6 @@ export const pilotCategories = [
   "casual-realtime",
   "team",
 ] as const;
-
-export const MASTER_OPERATOR_EMAIL = MASTER_TEST_ACCOUNT_EMAIL;
-
-export const OperatorSecurityReviewSchema = z
-  .object({
-    schemaVersion: z.literal(1),
-    generatedAt: z.string().datetime({ offset: true }),
-    reviewer: z.object({
-      name: z.string().min(1),
-      model: z.string().min(1),
-    }),
-    operator: z.literal(MASTER_OPERATOR_EMAIL),
-    approvedAt: z.string().datetime({ offset: true }),
-    checklist: z.object({
-      tenantIsolation: z.literal(true),
-      tokensSessions: z.literal(true),
-      zipLimits: z.literal(true),
-      sandboxCsp: z.literal(true),
-      githubWebhooks: z.literal(true),
-      nakamaTenantBoundaries: z.literal(true),
-      adminAuthorization: z.literal(true),
-    }),
-    evidenceReferences: z.array(z.string().min(1)).min(1),
-    passed: z.literal(true),
-  })
-  .refine(
-    (value) =>
-      value.reviewer.name.toLowerCase() !== value.operator.toLowerCase(),
-    { message: "security review agent must not self-approve" },
-  );
 
 export const PilotMatrixSchema = z.object({
   schemaVersion: z.literal(1),

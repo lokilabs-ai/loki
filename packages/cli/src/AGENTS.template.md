@@ -33,37 +33,52 @@
 - Never trust or override the `projectId`, player identity, room membership,
   host assignment, sequence, or snapshots returned by Loki.
 - Create rooms with `createRoom()` and join with `joinRoom({ inviteCode })`.
-  Do not invent Loki room keys or pass player-typed codes to `createRoom`. `create()` stays invite-only unless the
-  game explicitly passes `{ visibility: "public" }`. Do not make every room
-  public. Confirm for each mode whether entry is private invites, public
-  room browsing (`listPublicRooms` + `joinPublic`), automatic matchmaking,
-  or a combination. Loki’s SDK does not add a public lobby screen. If
-  public-room discovery is enabled, the game agent must build the room
-  browser and all loading, empty, joining, full-room, waiting, readiness,
-  and error states. The Loki overlay does not list, create, or join public
-  rooms.
-- Installing the SDK does not add a create/join screen. If the game has no
-  usable room-entry flow, add one before shipping: a minimal lobby (create
-  room, join with invite, copy invite, start when ready) or an automatic
-  flow (plain URL creates a room; invite or deep-link URL joins it). The
-  Loki overlay shows room status, players, invite copy, and chat only; it
-  does not create or join rooms. Players still need loading, waiting, and
-  error states.
-- Installing the SDK also does not add Match or Leaderboard screens; both
-  are required alongside create/join, and the Loki overlay never draws
-  them. Add a Match control that calls the room wrapper's `matchmake()`
-  (`SynchronizedRoom.matchmake()` / `RealtimeRoom.matchmake()`) with
-  confirmed player/team settings, plus searching, cancel (abort the
-  in-flight search), timeout, waiting, and error states. Add a per-game
-  Leaderboard using `listLeaderboard()`/`submitLeaderboardScore()` (or the
-  in-room `submitScore()` for a mid-room board), with display-name
-  collection or a sensible fallback, plus loading, empty, pagination,
-  submission, and error states. Player count, teams, and scoring stay
+  Do not invent Loki room keys or pass player-typed codes to `createRoom`.
+  `create()` stays invite-only unless the game explicitly passes
+  `{ visibility: "public" }`. Every game offers both: a private room that is
+  joined by invite code, and a public room that appears in a public room list.
+  Do not make every room public. Loki’s SDK does not add a public lobby screen;
+  the game agent must build the room browser and all loading, empty, joining,
+  full-room, waiting, readiness, and error states. The Loki overlay does not
+  list, create, or join public rooms.
+- Run the room flow through the SDK's lobby controller, and build every screen
+  yourself. Call `client.createLobby({ makeRoom, minPlayers, leaderboardId })`,
+  where `makeRoom` returns a fresh `createSynchronizedRoom()` or
+  `createRealtimeRoom()` for each match. The controller draws nothing: read
+  `lobby.getState()` (and `lobby.subscribe()`) and render it. `phase` is
+  `menu`, `creating`, `joining`, `searching`, `waiting`, `ready`, `leaving`, or
+  `error`; `state.room` has the invite code and the roster count against
+  `minPlayers`; `state.publicRooms` and `state.leaderboard` each carry their own
+  loading, ready, and error status. Actions are `createPrivate()`,
+  `createPublic({ modeLabel })`, `joinWithCode(code)`, `joinPublic(roomId)`,
+  `refreshPublicRooms()`, `matchmake({ minPlayers, maxPlayers, teamSize })`,
+  `cancelSearch()`, `leave()`, `loadLeaderboard()`, `loadMoreLeaderboard()`, and
+  `submitScore(score, { displayName })`. Use `lobby.getRoom()` for `dispatch()`
+  and the realtime calls. A call made while another entry is in flight is
+  ignored, so a double click is safe. Do not hand-write create/join/leave
+  sequencing, timeouts, or match start logic around it.
+- Installing the SDK, or using the lobby controller, does not add any screen,
+  and the Loki overlay never draws them. Build these screens in the game's own
+  theme, with its art direction, fonts, colors, and controls, not an unstyled
+  default, and keep them usable on touch and on desktop:
+  - Create room, join with an invite code, copy invite, and start when ready.
+  - A Create private room control and a Create public room control, a public
+    room list (`refreshPublicRooms()`), and join from that list.
+  - A Match control (`matchmake()`) with confirmed player/team settings, plus
+    searching, a cancel control (`cancelSearch()`), timeout, waiting, and error
+    states.
+  - A per-game Leaderboard with display-name collection or a sensible fallback,
+    plus loading, empty, pagination (`loadMoreLeaderboard()`), submission, and
+    error states.
+  - Loading, waiting, and error states on every screen. Show `state.error`.
+
+  Public rooms, Match, and the Leaderboard are required in every game; do not
+  ask the creator whether to build them. Player count, teams, and scoring stay
   creator decisions from the confirmed profile; if the game has no numeric
-  result to store, ask the creator once what to record instead of
-  inventing a scoring rule. Leaderboards are per-game/project and available
-  to guest sessions without a creator account; client-submitted scores are
-  not an anti-cheat boundary. Public room browsing stays optional.
+  result to store, ask the creator once what to record instead of inventing a
+  scoring rule. Leaderboards are per-game/project and available to guest
+  sessions without a creator account; client-submitted scores are not an
+  anti-cheat boundary.
 - Before configuring Loki multiplayer, inspect the game's source, existing UI,
   configuration, documentation, tests, and finished build. Locate its game
   modes, seats, local-player handling, AI opponents, teams, start conditions,
@@ -81,8 +96,7 @@
   matchmaking flow.
 - Determine and confirm for each mode: minimum, recommended, and maximum
   players; number of teams, team size, and whether players share control;
-  private invite, public room browsing, automatic matchmaking, a
-  combination, or asynchronous entry; whether late
+  whether late
   joining and spectators are allowed; turn-based, event-driven, continuous
   realtime, or hybrid simulation; sequential or simultaneous input; required
   authoritative update frequency and latency sensitivity; session duration
@@ -153,7 +167,8 @@
   while interrupted. That applies to one match only: between matches,
   `await leave()` on the old room, stop listening to it, and create a fresh
   `createSynchronizedRoom()` for the next match instead of reusing the old
-  room object. Let the SDK own browser lifecycle detection, socket
+  room object (the lobby controller does this when `makeRoom` returns a new
+  room). Let the SDK own browser lifecycle detection, socket
   replacement, reconnect retries, snapshot recovery, and pending-action replay.
 - `createRealtimeRoom()`: integrate the game's existing simulation through
   `RealtimeRoom`'s callbacks (predict/interpolate/extrapolate/blendCorrection/
@@ -240,7 +255,9 @@
   confirmation timed out" as an unknown outcome, not proof of failure. Treat
   `room_closed` as terminal. Resolve `leave_failed` before starting another
   room with that client.
-- Starting another match from the menu: `await leave()` to completion before
+- The lobby controller already does the next three rules. Follow them yourself
+  only for a room the game manages outside the controller. Starting another
+  match from the menu: `await leave()` to completion before
   `create()`, `join()`, `joinPublic()`, or `matchmake()`. Skip it only when
   `connection` is `idle`. Do not treat `closed` or `failed` as already left
   while a room id is still held; call `leave()` and retry after
@@ -253,11 +270,12 @@
   not gate the start on `membership === "ready"` alone; it can read
   `synchronizing` briefly while the roster is restored. While fewer members
   are present, show the invite code with a player count such as "1 / 2".
-- When a mode's confirmed entry is private invites plus public rooms, show
-  both a Create private room control and a Create public room control
-  (`create({ visibility: "public" })`), and a public room list built on
-  `listPublicRooms()` and `joinPublic({ roomId })` with loading, empty,
-  joining, full, waiting, and error states.
+- Every game shows both a Create private room control and a Create public room
+  control (`createPrivate()` / `createPublic()`, or
+  `create({ visibility: "public" })` on a room you manage yourself), and a
+  public room list built on `refreshPublicRooms()` (or `listPublicRooms()` and
+  `joinPublic({ roomId })`) with loading, empty, joining, full, waiting, and
+  error states.
 - Handle rejected actions from `dispatch()` without inventing a parallel
   protocol.
 - Include `<meta name="viewport"
