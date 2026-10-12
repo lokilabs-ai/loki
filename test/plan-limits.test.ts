@@ -191,6 +191,9 @@ test("the master test account is exempt from Free caps and only that exact addre
   assert.equal(isMasterTestAccount(MASTER_TEST_ACCOUNT_EMAIL), true);
   assert.equal(isMasterTestAccount(`  ${MASTER_TEST_ACCOUNT_EMAIL.toUpperCase()} `), true);
   assert.equal(isMasterTestAccount(`x${MASTER_TEST_ACCOUNT_EMAIL}`), false);
+  assert.equal(isMasterTestAccount("lokiplaytesting@gmail.com"), true);
+  assert.equal(isMasterTestAccount("  LokiPlayTesting@Gmail.com "), true);
+  assert.equal(isMasterTestAccount("xlokiplaytesting@gmail.com"), false);
   assert.equal(isMasterTestAccount("other@gmail.com"), false);
   assert.equal(isMasterTestAccount(undefined), false);
   assert.equal(entitledPlan(MASTER_TEST_ACCOUNT_EMAIL, { plan: "free", status: "active" }), "pro");
