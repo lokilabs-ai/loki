@@ -576,6 +576,7 @@ test("Theme 03 product surfaces render functional, safely configured shells", ()
   assert.doesNotMatch(creator, /Upload finished build/);
   assert.match(creator, /signup\?redirect_to=/);
   assert.match(creator, /This email is already registered/);
+  assert.match(creator, /result\.user \|\| result/);
   assert.match(creator, /auth\/v1\/resend\?redirect_to=/);
   assert.match(player, /Public catalog/);
   assert.match(player, /Recent games/);

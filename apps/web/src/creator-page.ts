@@ -2971,13 +2971,9 @@ const creatorScript = String.raw`
             body: JSON.stringify({ email, password })
           }
         );
-        if (
-          signup &&
-          result &&
-          result.user &&
-          Array.isArray(result.user.identities) &&
-          result.user.identities.length === 0
-        ) {
+        const signedUp = result && (result.user || result);
+        const identities = signedUp && signedUp.identities;
+        if (signup && Array.isArray(identities) && identities.length === 0) {
           setAuthMode("signin");
           byId("auth-email").value = email;
           showNotice(
