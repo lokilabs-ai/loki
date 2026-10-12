@@ -458,6 +458,8 @@ npx lokiplay@${v} <command>`)}
             <li>Do not run both room types for the same mode.</li>
             <li>Native clients cannot join realtime rooms. Cross-client modes use synchronized rooms.</li>
           </ol>
+          <h2>Run the room flow with the lobby controller</h2>
+          <p>Call <code>client.createLobby({ makeRoom, minPlayers, leaderboardId })</code> and draw its state. It covers creating a private or public room, joining by code or from the public list, matchmaking with cancel and timeouts, leaving, and the leaderboard. Public rooms, Match, and the Leaderboard are required in every game, so do not ask the creator whether to build them. The controller draws no screens: build every one in the game’s own theme, for touch and desktop.</p>
           <h2>What every mode still needs</h2>
           <ul>
             <li>Create with <code>createRoom()</code> / <code>room.create()</code>. Create stays invite-only unless the game passes <code>{ visibility: "public" }</code>.</li>
@@ -745,7 +747,7 @@ const client = await createHostedLokiClient({
     lede: "This page is the human-readable form of AGENTS.md and loki://docs/integration. Installing the package is step one, not the end of the job.",
     main: `
           <h2>Disclaimer for agents</h2>
-          <p>Do not report the integration complete after <code>npm install</code>, <code>lokiplay connect</code>, or the first <code>lokiplay ship</code>. Each game still requires fine-tuning: inspect the real modes, confirm player counts and room type with the creator, add a usable create/join flow, tune the reducer or <code>RealtimeProfile</code>, and exercise reconnect and mobile. If a material field is ambiguous, stop and ask.</p>
+          <p>Do not report the integration complete after <code>npm install</code>, <code>lokiplay connect</code>, or the first <code>lokiplay ship</code>. Each game still requires fine-tuning: inspect the real modes, confirm player counts, teams, and scoring with the creator, run the room flow through <code>client.createLobby()</code> and draw its screens in the game’s own theme, tune the reducer or <code>RealtimeProfile</code>, and exercise reconnect and mobile. If a material field is ambiguous, stop and ask.</p>
           <h2>Hard rules</h2>
           <ol>
             <li>Install <code>@lokiplay/sdk@${v}</code>. Do not import Nakama.</li>
@@ -870,7 +872,7 @@ npx lokiplay@${v} ship`)}
     ]),
     main: `
           <h2>What install gives you</h2>
-          <p>The SDK, CLI, and overlay give you a host, rooms, and a playable URL. They do not invent the right player count, room type, lobby, reducer, realtime profile, or mobile layout for that title.</p>
+          <p>The SDK, CLI, and overlay give you a host, rooms, and a playable URL. They do not invent the right player count, reducer, realtime profile, or mobile layout for that title. <code>createLobby()</code> runs the room flow, but it draws nothing: the game builds every screen in its own theme.</p>
           <h2>What you still do</h2>
           <p>Fine-tuning is required after installation. Play the game, adjust the integration, and ship again. You may need to test back and forth before the features work properly for this game.</p>
 `,
